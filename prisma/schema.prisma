@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id         String   @id @default(uuid())
+  name       String   @unique
+
+  users      User[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model User {
+  id           String   @id @default(uuid())
+
+  roleId       String
+  role         Role     @relation(fields: [roleId], references: [id])
+
+  fullName     String
+  email        String   @unique
+  phoneNumber  String
+  password     String
+  isActive     Boolean  @default(true)
+
+  repairJobs       RepairJob[]
+  statusChanges    RepairStatusHistory[]
+  stockMovements   StockMovement[]
+  payments         Payment[]
+  invoices         Invoice[]
+  notifications    Notification[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Customer {
+  id            String   @id @default(uuid())
+
+  customerCode  String   @unique
+  fullName      String
+  phoneNumber   String
+  address       String?
+  notes         String?
+
+  repairJobs    RepairJob[]
+  invoices      Invoice[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model RepairJob {
+  id                    String   @id @default(uuid())
+
+  customerId            String
+  customer              Customer @relation(fields: [customerId], references: [id])
+
+  technicianId          String
+  technician            User     @relation(fields: [technicianId], references: [id])
+
+  jobNumber             String   @unique
+  deviceType            String
+  brand                 String?
+  model                 String?
+  serialNumber          String?
+
+  problemDescription    String
+  deviceCondition       String?
+
+  estimatedCost         Decimal? @db.Decimal(10,2)
+  advanceAmount         Decimal? @db.Decimal(10,2)
+
+  status                String
+
+  receivedDate          DateTime
+  expectedDeliveryDate  DateTime?
+  deliveredDate         DateTime?
+
+  statusHistory         RepairStatusHistory[]
+  invoices              Invoice[]
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model RepairStatusHistory {
+  id            String    @id @default(uuid())
+
+  repairJobId   String
+  repairJob     RepairJob @relation(fields: [repairJobId], references: [id])
+
+  oldStatus     String
+  newStatus     String
+
+  changedBy     String
+  user          User @relation(fields: [changedBy], references: [id])
+
+  notes         String?
+
+  createdAt     DateTime @default(now())
+}
+
+model Category {
+  id            String   @id @default(uuid())
+
+  name          String
+  description   String?
+
+  products      Product[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Product {
+  id              String   @id @default(uuid())
+
+  categoryId      String
+  category        Category @relation(fields: [categoryId], references: [id])
+
+  productCode     String   @unique
+  name            String
+  brand           String?
+
+  purchasePrice   Decimal  @db.Decimal(10,2)
+  sellingPrice    Decimal  @db.Decimal(10,2)
+
+  stockQuantity   Int
+  minimumStock    Int
+
+  description     String?
+  imageUrl        String?
+
+  invoiceItems    InvoiceItem[]
+  stockMovements  StockMovement[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model StockMovement {
+  id              String   @id @default(uuid())
+
+  productId       String
+  product         Product @relation(fields: [productId], references: [id])
+
+  movementType    String
+
+  quantity        Int
+  previousStock   Int
+  currentStock    Int
+
+  referenceType   String?
+  referenceId     String?
+
+  createdBy       String
+  user            User @relation(fields: [createdBy], references: [id])
+
+  createdAt       DateTime @default(now())
+}
+
+model Invoice {
+  id              String   @id @default(uuid())
+
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id])
+
+  repairJobId     String?
+  repairJob       RepairJob? @relation(fields: [repairJobId], references: [id])
+
+  invoiceNumber   String   @unique
+
+  subtotal        Decimal  @db.Decimal(10,2)
+  discount        Decimal  @db.Decimal(10,2)
+  tax             Decimal  @db.Decimal(10,2)
+
+  grandTotal      Decimal  @db.Decimal(10,2)
+
+  paidAmount      Decimal  @db.Decimal(10,2)
+  pendingAmount   Decimal  @db.Decimal(10,2)
+
+  paymentStatus   String
+
+  invoiceDate     DateTime
+
+  createdBy       String
+  user            User @relation(fields: [createdBy], references: [id])
+
+  items           InvoiceItem[]
+  payments        Payment[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model InvoiceItem {
+  id             String   @id @default(uuid())
+
+  invoiceId      String
+  invoice        Invoice @relation(fields: [invoiceId], references: [id])
+
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id])
+
+  itemName       String
+  itemType       String
+
+  quantity       Int
+
+  unitPrice      Decimal @db.Decimal(10,2)
+  totalPrice     Decimal @db.Decimal(10,2)
+
+  createdAt      DateTime @default(now())
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+
+  invoiceId         String
+  invoice           Invoice @relation(fields: [invoiceId], references: [id])
+
+  paymentMethod     String
+
+  paymentAmount     Decimal @db.Decimal(10,2)
+
+  paymentDate       DateTime
+
+  referenceNumber   String?
+  notes             String?
+
+  createdBy         String
+  user              User @relation(fields: [createdBy], references: [id])
+
+  createdAt         DateTime @default(now())
+}
+
+model Setting {
+  id             String   @id @default(uuid())
+
+  settingKey     String   @unique
+  settingValue   String
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Notification {
+  id             String   @id @default(uuid())
+
+  userId         String
+  user           User @relation(fields: [userId], references: [id])
+
+  title          String
+  message        String
+
+  type           String
+
+  isRead         Boolean @default(false)
+
+  createdAt      DateTime @default(now())
+}
+
+model FileUpload {
+  id             String   @id @default(uuid())
+
+  referenceType  String
+  referenceId    String
+
+  fileName       String
+  fileUrl        String
+  mimeType       String
+
+  createdAt      DateTime @default(now())
+}
