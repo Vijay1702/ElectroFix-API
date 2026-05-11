@@ -41,3 +41,12 @@ export const getLowStockItems = async (req: Request, res: Response, next: NextFu
     next(error);
   }
 };
+
+export const getTechnicianWorkload = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const workload = await dashboardService.getTechnicianWorkload();
+    return successResponse(res, workload, "Technician workload fetched successfully");
+  } catch (error) {
+    next(error);
+  }
+};

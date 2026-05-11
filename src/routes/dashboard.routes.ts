@@ -29,5 +29,6 @@ router.get('/summary', dashboardController.getSummary);
 router.get('/recent-repairs', dashboardController.getRecentRepairs);
 router.get('/recent-sales', dashboardController.getRecentSales);
 router.get('/low-stock', dashboardController.getLowStockItems);
+router.get('/technician-workload', dashboardController.getTechnicianWorkload);
 
 export default router;
