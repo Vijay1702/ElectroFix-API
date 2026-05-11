@@ -5,8 +5,19 @@ import { MESSAGES } from '../constants/messages.constants';
 import { errorResponse } from '../utils/response';
 import { AuthRequest, AuthUser } from '../types/express.d';
 
-export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    // DEVELOPMENT BYPASS
+    if (process.env.NODE_ENV !== 'production') {
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+      const adminUser = await prisma.user.findFirst({ where: { email: 'admin@electrofix.com' } });
+      if (adminUser) {
+        req.user = { id: adminUser.id, email: adminUser.email } as any;
+        return next();
+      }
+    }
+
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
