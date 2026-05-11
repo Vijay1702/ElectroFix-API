@@ -70,6 +70,41 @@ async function main() {
     },
   });
 
+  const techUser3 = await prisma.user.create({
+    data: {
+      fullName: "Karthik Raja",
+      email: "tech3@electrofix.com",
+      phoneNumber: "9840011111",
+      password: hashedPassword,
+      isActive: true,
+      roleId: technicianRole.id,
+    },
+  });
+
+  const techUser4 = await prisma.user.create({
+    data: {
+      fullName: "Vigneshwaran S.",
+      email: "tech4@electrofix.com",
+      phoneNumber: "9840022222",
+      password: hashedPassword,
+      isActive: true,
+      roleId: technicianRole.id,
+    },
+  });
+
+  const techUser5 = await prisma.user.create({
+    data: {
+      fullName: "Selva Kumar",
+      email: "tech5@electrofix.com",
+      phoneNumber: "9840033333",
+      password: hashedPassword,
+      isActive: true,
+      roleId: technicianRole.id,
+    },
+  });
+
+  const technicians = [techUser1, techUser2, techUser3, techUser4, techUser5];
+
   // Create Tamil Nadu settings
   const defaultSettings = [
     { settingKey: "shop_name", settingValue: "ElectroFix Tamil Nadu" },
@@ -155,7 +190,7 @@ async function main() {
   const statuses = ["PENDING", "IN_PROGRESS", "COMPLETED", "DELIVERED"];
   for (let i = 0; i < 20; i++) {
     const customer = createdCustomers[i % createdCustomers.length];
-    const tech = i % 2 === 0 ? techUser1 : techUser2;
+    const tech = technicians[i % technicians.length];
     const status = statuses[i % statuses.length];
 
     await prisma.repairJob.create({

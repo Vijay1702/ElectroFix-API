@@ -29,8 +29,11 @@ export const generateJobNumber = async (): Promise<string> => {
 
   let nextNumber = 1;
   if (lastJob?.jobNumber) {
-    const lastNumber = parseInt(lastJob.jobNumber.replace("JOB-", ""), 10);
-    nextNumber = lastNumber + 1;
+    // Extract the last numeric part from the job number
+    const matches = lastJob.jobNumber.match(/\d+$/);
+    if (matches) {
+      nextNumber = parseInt(matches[0], 10) + 1;
+    }
   }
 
   return `JOB-${String(nextNumber).padStart(4, "0")}`;

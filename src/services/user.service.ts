@@ -2,10 +2,26 @@ import bcrypt from 'bcrypt';
 import * as userRepository from '../repositories/user.repository';
 import { MESSAGES } from '../constants/messages.constants';
 
-export const getUsers = async (pagination: any) => {
+export const getUsers = async (pagination: any, filters: { role?: string; search?: string } = {}) => {
   const { skip, limit } = pagination;
-  const users = await userRepository.list({ skip, take: limit });
-  const total = await userRepository.count();
+  const { role, search } = filters;
+
+  const where: any = {};
+
+  if (role) {
+    where.role = { name: role };
+  }
+
+  if (search) {
+    where.OR = [
+      { fullName: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search, mode: 'insensitive' } },
+      { phoneNumber: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  const users = await userRepository.list({ skip, take: limit, where });
+  const total = await userRepository.count(where);
 
   // Remove passwords from response
   const usersWithoutPasswords = users.map((user: any) => {

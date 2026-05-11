@@ -24,8 +24,12 @@ export const getRepairJobById = async (id: string) => {
 export const createRepairJob = async (payload: any, creatorId: string) => {
   const jobNumber = await generateJobNumber();
   
+  const { receivedDate, expectedDeliveryDate, ...rest } = payload;
+
   const repair = await repairRepository.create({
-    ...payload,
+    ...rest,
+    receivedDate: receivedDate ? new Date(receivedDate) : new Date(),
+    expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : null,
     jobNumber,
     status: REPAIR_STATUS.RECEIVED,
   });
@@ -48,7 +52,13 @@ export const updateRepairJob = async (id: string, payload: any) => {
     throw { statusCode: 404, message: MESSAGES.REPAIR.NOT_FOUND };
   }
 
-  return repairRepository.update(id, payload);
+  const { expectedDeliveryDate, deliveredDate, ...rest } = payload;
+  const updateData: any = { ...rest };
+
+  if (expectedDeliveryDate) updateData.expectedDeliveryDate = new Date(expectedDeliveryDate);
+  if (deliveredDate) updateData.deliveredDate = new Date(deliveredDate);
+
+  return repairRepository.update(id, updateData);
 };
 
 export const updateRepairStatus = async (id: string, payload: any, userId: string) => {

@@ -13,8 +13,8 @@ export const createRepairJobSchema = z.object({
     deviceCondition: z.string().optional(),
     estimatedCost: z.number().optional(),
     advanceAmount: z.number().optional(),
-    receivedDate: z.string().datetime(),
-    expectedDeliveryDate: z.string().datetime().optional(),
+    receivedDate: z.string().optional(),
+    expectedDeliveryDate: z.string().optional(),
   }),
 });
 
@@ -31,8 +31,8 @@ export const updateRepairJobSchema = z.object({
     estimatedCost: z.number().optional(),
     advanceAmount: z.number().optional(),
     status: z.nativeEnum(REPAIR_STATUS).optional(),
-    expectedDeliveryDate: z.string().datetime().optional(),
-    deliveredDate: z.string().datetime().optional(),
+    expectedDeliveryDate: z.string().optional(),
+    deliveredDate: z.string().optional(),
   }),
 });
 

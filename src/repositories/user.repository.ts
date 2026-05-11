@@ -31,6 +31,7 @@ export const update = async (id: string, data: Prisma.UserUpdateInput): Promise<
 export const list = async (params: { skip?: number; take?: number; where?: Prisma.UserWhereInput }): Promise<User[]> => {
   return prisma.user.findMany({
     ...params,
+    include: { role: { select: { name: true } } },
     orderBy: { createdAt: 'desc' },
   });
 };
