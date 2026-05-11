@@ -7,7 +7,8 @@ import { parsePagination } from '../utils/pagination';
 export const getCustomers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pagination = parsePagination(req);
-    const { customers, total } = await customerService.getCustomers(pagination);
+    const search = req.query.search as string;
+    const { customers, total } = await customerService.getCustomers(pagination, search);
     return paginatedResponse(res, customers, total, pagination.page, pagination.limit, MESSAGES.CUSTOMER.FETCHED);
   } catch (error) {
     next(error);

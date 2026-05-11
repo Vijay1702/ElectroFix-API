@@ -2,10 +2,21 @@ import * as customerRepository from '../repositories/customer.repository';
 import { MESSAGES } from '../constants/messages.constants';
 import { generateCustomerCode } from '../utils/generate-code';
 
-export const getCustomers = async (pagination: any) => {
+export const getCustomers = async (pagination: any, search?: string) => {
   const { skip, limit } = pagination;
-  const customers = await customerRepository.list({ skip, take: limit });
-  const total = await customerRepository.count();
+  
+  const where: any = {};
+  if (search) {
+    where.OR = [
+      { fullName: { contains: search, mode: 'insensitive' } },
+      { phoneNumber: { contains: search, mode: 'insensitive' } },
+      { customerCode: { contains: search, mode: 'insensitive' } },
+      { address: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  const customers = await customerRepository.list({ skip, take: limit, where });
+  const total = await customerRepository.count(where);
 
   return { customers, total };
 };

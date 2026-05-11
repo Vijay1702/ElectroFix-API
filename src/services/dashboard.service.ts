@@ -1,6 +1,7 @@
 import prisma from '../config/prisma.config';
 import { REPAIR_STATUS } from '../constants/repair-status.constants';
 
+export const getSummary = async () => {
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -66,7 +67,7 @@ export const getTechnicianWorkload = async () => {
       id: true,
       fullName: true,
       _count: {
-        select: { repairJobs: { where: { status: { notIn: [REPAIR_STATUS.DELIVERED, REPAIR_STATUS.CANCELLED] } } } }
+        select: { repairJobs: { where: { status: { not: REPAIR_STATUS.DELIVERED } } } }
       }
     }
   });

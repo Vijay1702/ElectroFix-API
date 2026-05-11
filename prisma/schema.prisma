@@ -60,7 +60,7 @@ model RepairJob {
   id                    String   @id @default(uuid())
 
   customerId            String
-  customer              Customer @relation(fields: [customerId], references: [id])
+  customer              Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   technicianId          String
   technician            User     @relation(fields: [technicianId], references: [id])
@@ -94,7 +94,7 @@ model RepairStatusHistory {
   id            String    @id @default(uuid())
 
   repairJobId   String
-  repairJob     RepairJob @relation(fields: [repairJobId], references: [id])
+  repairJob     RepairJob @relation(fields: [repairJobId], references: [id], onDelete: Cascade)
 
   oldStatus     String
   newStatus     String
@@ -170,10 +170,10 @@ model Invoice {
   id              String   @id @default(uuid())
 
   customerId      String
-  customer        Customer @relation(fields: [customerId], references: [id])
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   repairJobId     String?
-  repairJob       RepairJob? @relation(fields: [repairJobId], references: [id])
+  repairJob       RepairJob? @relation(fields: [repairJobId], references: [id], onDelete: SetNull)
 
   invoiceNumber   String   @unique
 
@@ -204,7 +204,7 @@ model InvoiceItem {
   id             String   @id @default(uuid())
 
   invoiceId      String
-  invoice        Invoice @relation(fields: [invoiceId], references: [id])
+  invoice        Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   productId      String?
   product        Product? @relation(fields: [productId], references: [id])
@@ -224,7 +224,7 @@ model Payment {
   id                String   @id @default(uuid())
 
   invoiceId         String
-  invoice           Invoice @relation(fields: [invoiceId], references: [id])
+  invoice           Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   paymentMethod     String
 

@@ -40,6 +40,7 @@ export const paginatedResponse = (
     success: true,
     message,
     data,
+    total,
     pagination: {
       total,
       page,
