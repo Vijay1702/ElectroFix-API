@@ -7,7 +7,11 @@ import { parsePagination } from '../utils/pagination';
 export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pagination = parsePagination(req);
-    const { products, total } = await productService.getProducts(pagination);
+    const { search, categoryId } = req.query;
+    const { products, total } = await productService.getProducts(pagination, {
+      search: search as string,
+      categoryId: categoryId as string
+    });
     return paginatedResponse(res, products, total, pagination.page, pagination.limit, MESSAGES.PRODUCT.FETCHED);
   } catch (error) {
     next(error);

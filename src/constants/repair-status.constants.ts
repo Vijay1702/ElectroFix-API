@@ -1,9 +1,7 @@
 export const REPAIR_STATUS = {
-  RECEIVED: "received",
-  UNDER_INSPECTION: "under_inspection",
-  UNDER_REPAIR: "under_repair",
-  WAITING_PARTS: "waiting_parts",
-  READY_FOR_DELIVERY: "ready_for_delivery",
+  NOT_STARTED: "not_started",
+  WORK_IN_PROGRESS: "work_in_progress",
+  PENDING_TO_DELIVER: "pending_to_deliver",
   DELIVERED: "delivered",
 } as const;
 

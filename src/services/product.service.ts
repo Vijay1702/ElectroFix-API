@@ -2,10 +2,28 @@ import * as productRepository from '../repositories/product.repository';
 import { MESSAGES } from '../constants/messages.constants';
 import { generateProductCode } from '../utils/generate-code';
 
-export const getProducts = async (pagination: any) => {
+export const getProducts = async (pagination: any, filters: { search?: string, categoryId?: string }) => {
   const { skip, limit } = pagination;
-  const products = await productRepository.list({ skip, take: limit });
-  const total = await productRepository.count();
+  const { search, categoryId } = filters;
+
+  const where: any = {};
+
+  if (categoryId) {
+    where.categoryId = categoryId;
+  }
+
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { brand: { contains: search, mode: 'insensitive' } },
+      { productCode: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { category: { name: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const products = await productRepository.list({ skip, take: limit, where });
+  const total = await productRepository.count(where);
 
   return { products, total };
 };

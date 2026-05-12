@@ -1,9 +1,14 @@
 import prisma from '../config/prisma.config';
 import { REPAIR_STATUS } from '../constants/repair-status.constants';
 
-export const getSummary = async () => {
+export const getSummary = async (currentUser: any) => {
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const repairWhere: any = {};
+  if (currentUser?.role !== 'ADMIN') {
+    repairWhere.technicianId = currentUser?.id;
+  }
 
   const [
     totalCustomers,
@@ -15,16 +20,20 @@ export const getSummary = async () => {
     lowStockCount
   ] = await Promise.all([
     prisma.customer.count(),
-    prisma.repairJob.count(),
+    prisma.repairJob.count({ where: repairWhere }),
     prisma.repairJob.count({
       where: {
+        ...repairWhere,
         status: {
-          in: [REPAIR_STATUS.RECEIVED, REPAIR_STATUS.UNDER_INSPECTION, REPAIR_STATUS.UNDER_REPAIR, REPAIR_STATUS.WAITING_PARTS],
+          in: [REPAIR_STATUS.NOT_STARTED, REPAIR_STATUS.WORK_IN_PROGRESS, REPAIR_STATUS.PENDING_TO_DELIVER],
         },
       },
     }),
     prisma.repairJob.count({
-      where: { status: REPAIR_STATUS.DELIVERED },
+      where: { 
+        ...repairWhere,
+        status: REPAIR_STATUS.DELIVERED 
+      },
     }),
     prisma.invoice.aggregate({
       _sum: { grandTotal: true },
@@ -53,6 +62,7 @@ export const getSummary = async () => {
     totalProducts: await prisma.product.count(),
     completedToday: await prisma.repairJob.count({
       where: { 
+        ...repairWhere,
         status: REPAIR_STATUS.DELIVERED,
         updatedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
       }
@@ -73,9 +83,15 @@ export const getTechnicianWorkload = async () => {
   });
 };
 
-export const getRecentRepairs = async (limit: number = 5) => {
+export const getRecentRepairs = async (currentUser: any, limit: number = 5) => {
+  const where: any = {};
+  if (currentUser?.role !== 'ADMIN') {
+    where.technicianId = currentUser?.id;
+  }
+
   return prisma.repairJob.findMany({
     take: limit,
+    where,
     include: {
       customer: true,
       technician: { select: { id: true, fullName: true } },

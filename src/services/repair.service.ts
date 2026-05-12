@@ -3,10 +3,39 @@ import { MESSAGES } from '../constants/messages.constants';
 import { REPAIR_STATUS } from '../constants/repair-status.constants';
 import { generateJobNumber } from '../utils/generate-code';
 
-export const getRepairJobs = async (pagination: any) => {
+export const getRepairJobs = async (pagination: any, filters: { search?: string, status?: string }, currentUser: any) => {
   const { skip, limit } = pagination;
-  const repairs = await repairRepository.list({ skip, take: limit });
-  const total = await repairRepository.count();
+  const { search, status } = filters;
+
+  const where: any = {};
+
+  // Role-based filtering
+  if (currentUser && currentUser.role === 'TECHNICIAN') {
+    where.technicianId = currentUser.id;
+  } else if (currentUser && currentUser.role !== 'ADMIN') {
+    // Fallback for any other non-admin role
+    where.technicianId = currentUser.id;
+  }
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (search) {
+    where.OR = [
+      { jobNumber: { contains: search, mode: 'insensitive' } },
+      { deviceType: { contains: search, mode: 'insensitive' } },
+      { brand: { contains: search, mode: 'insensitive' } },
+      { model: { contains: search, mode: 'insensitive' } },
+      { customer: { fullName: { contains: search, mode: 'insensitive' } } },
+      { customer: { phoneNumber: { contains: search, mode: 'insensitive' } } },
+      { technician: { fullName: { contains: search, mode: 'insensitive' } } },
+      { problemDescription: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  const repairs = await repairRepository.list({ skip, take: limit, where });
+  const total = await repairRepository.count(where);
 
   return { repairs, total };
 };
@@ -31,14 +60,14 @@ export const createRepairJob = async (payload: any, creatorId: string) => {
     receivedDate: receivedDate ? new Date(receivedDate) : new Date(),
     expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : null,
     jobNumber,
-    status: REPAIR_STATUS.RECEIVED,
+    status: REPAIR_STATUS.NOT_STARTED,
   });
 
   // Add initial status history
   await repairRepository.addStatusHistory({
     repairJob: { connect: { id: repair.id } },
     oldStatus: '',
-    newStatus: REPAIR_STATUS.RECEIVED,
+    newStatus: REPAIR_STATUS.NOT_STARTED,
     user: { connect: { id: creatorId } },
     notes: 'Repair job created',
   });
@@ -46,19 +75,33 @@ export const createRepairJob = async (payload: any, creatorId: string) => {
   return repair;
 };
 
-export const updateRepairJob = async (id: string, payload: any) => {
+export const updateRepairJob = async (id: string, payload: any, userId?: string) => {
   const repair = await repairRepository.findById(id);
   if (!repair) {
     throw { statusCode: 404, message: MESSAGES.REPAIR.NOT_FOUND };
   }
 
-  const { expectedDeliveryDate, deliveredDate, ...rest } = payload;
+  const { expectedDeliveryDate, deliveredDate, status, ...rest } = payload;
   const updateData: any = { ...rest };
 
   if (expectedDeliveryDate) updateData.expectedDeliveryDate = new Date(expectedDeliveryDate);
   if (deliveredDate) updateData.deliveredDate = new Date(deliveredDate);
+  if (status) updateData.status = status;
 
-  return repairRepository.update(id, updateData);
+  const updatedRepair = await repairRepository.update(id, updateData);
+
+  // If status changed, record it in history
+  if (status && status !== repair.status && userId) {
+    await repairRepository.addStatusHistory({
+      repairJob: { connect: { id } },
+      oldStatus: repair.status,
+      newStatus: status,
+      user: { connect: { id: userId } },
+      notes: `Status updated via job edit`,
+    });
+  }
+
+  return updatedRepair;
 };
 
 export const updateRepairStatus = async (id: string, payload: any, userId: string) => {

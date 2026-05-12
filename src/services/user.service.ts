@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import * as userRepository from '../repositories/user.repository';
 import { MESSAGES } from '../constants/messages.constants';
+import prisma from '../config/prisma.config';
 
 export const getUsers = async (pagination: any, filters: { role?: string; search?: string } = {}) => {
   const { skip, limit } = pagination;
@@ -44,11 +45,20 @@ export const getUserById = async (id: string) => {
 };
 
 export const createUser = async (payload: any) => {
-  const { email, password, ...rest } = payload;
+  const { email, password, role, ...rest } = payload;
 
   const existingUser = await userRepository.findByEmail(email);
   if (existingUser) {
     throw { statusCode: 400, message: MESSAGES.USER.EMAIL_EXISTS };
+  }
+
+  // Resolve roleId from name
+  const roleRecord = await prisma.role.findUnique({
+    where: { name: role || 'TECHNICIAN' }
+  });
+
+  if (!roleRecord) {
+    throw { statusCode: 400, message: 'Invalid role specified' };
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -57,6 +67,7 @@ export const createUser = async (payload: any) => {
     ...rest,
     email,
     password: hashedPassword,
+    roleId: roleRecord.id
   });
 };
 

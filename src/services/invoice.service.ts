@@ -3,10 +3,27 @@ import { MESSAGES } from '../constants/messages.constants';
 import { PAYMENT_STATUS } from '../constants/payment-status.constants';
 import { generateInvoiceNumber } from '../utils/generate-code';
 
-export const getInvoices = async (pagination: any) => {
+export const getInvoices = async (pagination: any, filters: { search?: string, status?: string }) => {
   const { skip, limit } = pagination;
-  const invoices = await invoiceRepository.list({ skip, take: limit });
-  const total = await invoiceRepository.count();
+  const { search, status } = filters;
+
+  const where: any = {};
+
+  if (status) {
+    where.paymentStatus = status;
+  }
+
+  if (search) {
+    where.OR = [
+      { invoiceNumber: { contains: search, mode: 'insensitive' } },
+      { customer: { fullName: { contains: search, mode: 'insensitive' } } },
+      { customer: { phoneNumber: { contains: search, mode: 'insensitive' } } },
+      { customer: { email: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const invoices = await invoiceRepository.list({ skip, take: limit, where });
+  const total = await invoiceRepository.count(where);
 
   return { invoices, total };
 };

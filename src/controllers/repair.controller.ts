@@ -5,10 +5,15 @@ import { MESSAGES } from '../constants/messages.constants';
 import { parsePagination } from '../utils/pagination';
 import { AuthRequest } from '../types/express.d';
 
-export const getRepairJobs = async (req: Request, res: Response, next: NextFunction) => {
+export const getRepairJobs = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const pagination = parsePagination(req);
-    const { repairs, total } = await repairService.getRepairJobs(pagination);
+    const { search, status } = req.query;
+    const { repairs, total } = await repairService.getRepairJobs(
+      pagination, 
+      { search: search as string, status: status as string },
+      req.user
+    );
     return paginatedResponse(res, repairs, total, pagination.page, pagination.limit, MESSAGES.REPAIR.FETCHED);
   } catch (error) {
     next(error);
@@ -34,9 +39,10 @@ export const createRepairJob = async (req: AuthRequest, res: Response, next: Nex
   }
 };
 
-export const updateRepairJob = async (req: Request, res: Response, next: NextFunction) => {
+export const updateRepairJob = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const repair = await repairService.updateRepairJob(req.params.id as string, req.body);
+    const userId = req.user!.id;
+    const repair = await repairService.updateRepairJob(req.params.id as string, req.body, userId);
     return successResponse(res, repair, MESSAGES.REPAIR.UPDATED);
   } catch (error) {
     next(error);

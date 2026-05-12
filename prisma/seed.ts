@@ -59,51 +59,7 @@ async function main() {
     },
   });
 
-  const techUser2 = await prisma.user.create({
-    data: {
-      fullName: "Anitha Subramanian",
-      email: "tech2@electrofix.com",
-      phoneNumber: "9840098765",
-      password: hashedPassword,
-      isActive: true,
-      roleId: technicianRole.id,
-    },
-  });
-
-  const techUser3 = await prisma.user.create({
-    data: {
-      fullName: "Karthik Raja",
-      email: "tech3@electrofix.com",
-      phoneNumber: "9840011111",
-      password: hashedPassword,
-      isActive: true,
-      roleId: technicianRole.id,
-    },
-  });
-
-  const techUser4 = await prisma.user.create({
-    data: {
-      fullName: "Vigneshwaran S.",
-      email: "tech4@electrofix.com",
-      phoneNumber: "9840022222",
-      password: hashedPassword,
-      isActive: true,
-      roleId: technicianRole.id,
-    },
-  });
-
-  const techUser5 = await prisma.user.create({
-    data: {
-      fullName: "Selva Kumar",
-      email: "tech5@electrofix.com",
-      phoneNumber: "9840033333",
-      password: hashedPassword,
-      isActive: true,
-      roleId: technicianRole.id,
-    },
-  });
-
-  const technicians = [techUser1, techUser2, techUser3, techUser4, techUser5];
+  const technicians = [techUser1];
 
   // Create Tamil Nadu settings
   const defaultSettings = [

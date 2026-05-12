@@ -2,20 +2,21 @@ import { Request, Response, NextFunction } from 'express';
 import * as dashboardService from '../services/dashboard.service';
 import { successResponse } from '../utils/response';
 import { MESSAGES } from '../constants/messages.constants';
+import { AuthRequest } from '../types/express.d';
 
-export const getSummary = async (req: Request, res: Response, next: NextFunction) => {
+export const getSummary = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const summary = await dashboardService.getSummary();
+    const summary = await dashboardService.getSummary(req.user);
     return successResponse(res, summary, MESSAGES.DASHBOARD.SUMMARY_FETCHED);
   } catch (error) {
     next(error);
   }
 };
 
-export const getRecentRepairs = async (req: Request, res: Response, next: NextFunction) => {
+export const getRecentRepairs = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const limit = parseInt(req.query.limit as string, 10) || 5;
-    const repairs = await dashboardService.getRecentRepairs(limit);
+    const repairs = await dashboardService.getRecentRepairs(req.user, limit);
     return successResponse(res, repairs, MESSAGES.DASHBOARD.RECENT_REPAIRS_FETCHED);
   } catch (error) {
     next(error);

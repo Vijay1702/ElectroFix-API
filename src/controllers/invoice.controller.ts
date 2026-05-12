@@ -8,7 +8,11 @@ import { AuthRequest } from '../types/express.d';
 export const getInvoices = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pagination = parsePagination(req);
-    const { invoices, total } = await invoiceService.getInvoices(pagination);
+    const { search, status } = req.query;
+    const { invoices, total } = await invoiceService.getInvoices(pagination, {
+      search: search as string,
+      status: status as string
+    });
     return paginatedResponse(res, invoices, total, pagination.page, pagination.limit, MESSAGES.INVOICE.FETCHED);
   } catch (error) {
     next(error);
