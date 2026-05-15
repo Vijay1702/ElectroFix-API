@@ -45,7 +45,7 @@ router.get('/', productController.getProducts);
 router.get('/low-stock', productController.getLowStockProducts);
 router.get('/:id', productController.getProductById);
 router.post('/', roleMiddleware([ROLES.ADMIN]), validate(createProductSchema), productController.createProduct);
-router.put('/:id', roleMiddleware([ROLES.ADMIN, ROLES.STAFF]), validate(updateProductSchema), productController.updateProduct);
+router.put('/:id', roleMiddleware([ROLES.ADMIN]), validate(updateProductSchema), productController.updateProduct);
 router.delete('/:id', roleMiddleware([ROLES.ADMIN]), productController.deleteProduct);
 
 export default router;

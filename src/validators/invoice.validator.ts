@@ -19,7 +19,7 @@ export const createInvoiceSchema = z.object({
     tax: z.number().min(0).optional(),
     grandTotal: z.number().min(0),
     paidAmount: z.number().min(0).optional(),
-    invoiceDate: z.string().datetime(),
+    invoiceDate: z.string().datetime().optional().nullable(),
     items: z.array(invoiceItemSchema).min(1, 'At least one item is required'),
   }),
 });

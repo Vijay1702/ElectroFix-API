@@ -2,6 +2,7 @@ import * as repairRepository from '../repositories/repair.repository';
 import { MESSAGES } from '../constants/messages.constants';
 import { REPAIR_STATUS } from '../constants/repair-status.constants';
 import { generateJobNumber } from '../utils/generate-code';
+import * as notificationService from './notification.service';
 
 export const getRepairJobs = async (pagination: any, filters: { search?: string, status?: string }, currentUser: any) => {
   const { skip, limit } = pagination;
@@ -72,6 +73,16 @@ export const createRepairJob = async (payload: any, creatorId: string) => {
     notes: 'Repair job created',
   });
 
+  // Notify technician if assigned
+  if (repair.technicianId) {
+    await notificationService.createNotification(
+      repair.technicianId,
+      'New Repair Assignment',
+      `You have been assigned a new repair job: ${repair.jobNumber} (${repair.brand} ${repair.model})`,
+      'assignment'
+    );
+  }
+
   return repair;
 };
 
@@ -99,6 +110,16 @@ export const updateRepairJob = async (id: string, payload: any, userId?: string)
       user: { connect: { id: userId } },
       notes: `Status updated via job edit`,
     });
+  }
+
+  // If technician was changed or newly assigned, notify them
+  if (updateData.technicianId && updateData.technicianId !== repair.technicianId) {
+    await notificationService.createNotification(
+      updateData.technicianId,
+      'New Repair Assignment',
+      `You have been assigned a new repair job: ${updatedRepair.jobNumber} (${updatedRepair.brand} ${updatedRepair.model})`,
+      'assignment'
+    );
   }
 
   return updatedRepair;

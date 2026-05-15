@@ -187,8 +187,9 @@ model Invoice {
   pendingAmount   Decimal  @db.Decimal(10,2)
 
   paymentStatus   String
+  notes           String?
 
-  invoiceDate     DateTime
+  invoiceDate     DateTime @default(now())
 
   createdBy       String
   user            User @relation(fields: [createdBy], references: [id])

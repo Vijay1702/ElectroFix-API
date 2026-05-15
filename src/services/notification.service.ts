@@ -1,35 +1,26 @@
-import prisma from '../config/prisma.config';
-import { MESSAGES } from '../constants/messages.constants';
+import * as notificationRepository from '../repositories/notification.repository';
 
-export const getNotifications = async (userId: string) => {
-  return prisma.notification.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-  });
+export const getMyNotifications = async (userId: string) => {
+  return notificationRepository.listByUser(userId);
 };
 
-export const markAsRead = async (id: string, userId: string) => {
-  const notification = await prisma.notification.findFirst({
-    where: { id, userId },
-  });
+export const getUnreadNotifications = async (userId: string) => {
+  return notificationRepository.listByUser(userId, false);
+};
 
-  if (!notification) {
-    throw { statusCode: 404, message: MESSAGES.NOTIFICATION.NOT_FOUND };
-  }
+export const markRead = async (id: string) => {
+  return notificationRepository.markAsRead(id);
+};
 
-  return prisma.notification.update({
-    where: { id },
-    data: { isRead: true },
-  });
+export const markAllRead = async (userId: string) => {
+  return notificationRepository.markAllAsRead(userId);
 };
 
 export const createNotification = async (userId: string, title: string, message: string, type: string = 'info') => {
-  return prisma.notification.create({
-    data: {
-      userId,
-      title,
-      message,
-      type,
-    },
+  return notificationRepository.create({
+    userId,
+    title,
+    message,
+    type
   });
 };

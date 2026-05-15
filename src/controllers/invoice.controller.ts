@@ -58,10 +58,22 @@ export const deleteInvoice = async (req: Request, res: Response, next: NextFunct
 
 export const generateInvoicePDF = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const invoice = await invoiceService.generateInvoicePDF(req.params.id as string);
-    // In a real app, you would set headers for PDF download.
-    return successResponse(res, invoice, MESSAGES.INVOICE.PDF_GENERATED);
+    const invoice = await invoiceService.getInvoiceById(req.params.id as string);
+    if (!invoice) return res.status(404).json({ message: "Invoice not found" });
+
+    // Sanitize filename to avoid browser confusion with slashes or special chars
+    const safeInvNumber = (invoice.invoiceNumber || 'Invoice').replace(/[^a-zA-Z0-9]/g, '_');
+    const fileName = `ElectroFix_${safeInvNumber}.pdf`;
+
+    const buffer = await invoiceService.generateInvoiceBuffer(invoice);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', buffer.length.toString());
+    
+    return res.send(buffer);
   } catch (error) {
+    console.error("CRITICAL PDF GENERATION ERROR:", error);
     next(error);
   }
 };
