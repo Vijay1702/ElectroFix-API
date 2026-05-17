@@ -42,7 +42,7 @@ app.use(env.API_PREFIX, routes);
 
 // Base route
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to ElectroFix API' });
+  res.json({ message: 'Welcome to Sri Senthil Spares & Services API' });
 });
 
 // Error Handling Middleware

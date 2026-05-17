@@ -5,12 +5,12 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'ElectroFix API Documentation',
+      title: 'Sri Senthil Spares & Services API Documentation',
       version: '1.0.0',
-      description: 'API documentation for the ElectroFix Repair Shop Management System',
+      description: 'API documentation for the Sri Senthil Spares & Services Shop Management System',
       contact: {
-        name: 'ElectroFix Support',
-        email: 'support@electrofix.com',
+        name: 'Sri Senthil Support',
+        email: 'support@srisenthil.com',
       },
     },
     servers: [

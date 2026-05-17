@@ -64,7 +64,7 @@ export const generateInvoicePDF = async (req: Request, res: Response, next: Next
 
     // Sanitize filename to avoid browser confusion with slashes or special chars
     const safeInvNumber = (invoice.invoiceNumber || 'Invoice').replace(/[^a-zA-Z0-9]/g, '_');
-    const fileName = `ElectroFix_${safeInvNumber}.pdf`;
+    const fileName = `SriSenthil_${safeInvNumber}.pdf`;
 
     const buffer = await invoiceService.generateInvoiceBuffer(invoice);
     

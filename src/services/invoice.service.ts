@@ -20,7 +20,6 @@ export const getInvoices = async (pagination: any, filters: { search?: string, s
       { invoiceNumber: { contains: search, mode: 'insensitive' } },
       { customer: { fullName: { contains: search, mode: 'insensitive' } } },
       { customer: { phoneNumber: { contains: search, mode: 'insensitive' } } },
-      { customer: { email: { contains: search, mode: 'insensitive' } } },
     ];
   }
 
@@ -56,7 +55,7 @@ export const createInvoice = async (payload: any, userId: string) => {
     paymentStatus = PAYMENT_STATUS.PARTIAL;
   }
 
-  const invoice = await invoiceRepository.create({
+  const invoice: any = await invoiceRepository.create({
     ...rest,
     invoiceNumber,
     paidAmount,
@@ -82,6 +81,42 @@ export const createInvoice = async (payload: any, userId: string) => {
         notes: 'Status updated to delivered automatically as invoice payment completed in full.',
       },
     });
+  }
+
+  // Reduce product stock and create stock movements for each product item
+  if (invoice.items && invoice.items.length > 0) {
+    for (const item of invoice.items) {
+      if (item.itemType === 'PRODUCT' && item.productId) {
+        const product = await prisma.product.findUnique({
+          where: { id: item.productId }
+        });
+        
+        if (product) {
+          const previousStock = product.stockQuantity;
+          const currentStock = Math.max(0, previousStock - item.quantity);
+          
+          // Update product stock
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { stockQuantity: currentStock }
+          });
+          
+          // Log stock movement
+          await prisma.stockMovement.create({
+            data: {
+              product: { connect: { id: item.productId } },
+              movementType: 'OUT',
+              quantity: item.quantity,
+              previousStock,
+              currentStock,
+              referenceType: 'INVOICE',
+              referenceId: invoice.id,
+              user: { connect: { id: userId } }
+            }
+          });
+        }
+      }
+    }
   }
 
   return invoice;
@@ -151,6 +186,9 @@ export const deleteInvoice = async (id: string) => {
 export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     try {
+      const path = require('path');
+      const fs = require('fs');
+      
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
       const buffers: Buffer[] = [];
       
@@ -159,49 +197,60 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc.on('error', reject);
 
       // --- BRANDING & HEADER ---
-      doc.fillColor('#1e40af').rect(0, 0, 595, 120).fill(); // Deep Blue Header
+      // Clean Cyan Primary Header block
+      doc.fillColor('#0CB9C1').rect(0, 0, 595, 140).fill(); 
       
+      // Load and render corporate logo
+      const logoPath = path.join(__dirname, '../assets/logo.jpg');
+      if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, 40, 35, { width: 70, height: 70 });
+      }
+      
+      // Company name and slogan - beautifully spaced to avoid overlap
       doc.fillColor('#ffffff')
-         .fontSize(24)
+         .fontSize(16)
          .font('Helvetica-Bold')
-         .text('ELECTROFIX SOLUTIONS', 50, 40)
-         .fontSize(10)
+         .text('SRI SENTHIL SPARES & SERVICES', 125, 40)
+         .fontSize(7)
          .font('Helvetica')
-         .text('PREMIUM HARDWARE SERVICES & SOLUTIONS', 50, 70);
+         .text('MOTORS, FANS, MIXERS, ELECTRICAL & INDUSTRIAL SERVICES', 125, 68)
+         .text('GSTIN: 33AAAAA0000A1Z5 | Chennai, Tamil Nadu', 125, 83);
 
+      // Invoice designation & number on the right
       doc.fillColor('#ffffff')
-         .fontSize(18)
+         .fontSize(16)
          .font('Helvetica-Bold')
-         .text('OFFICIAL INVOICE', 350, 45, { align: 'right' })
+         .text('OFFICIAL INVOICE', 350, 40, { align: 'right' })
          .fontSize(12)
-         .text(invoice.invoiceNumber || 'INV-000', 350, 70, { align: 'right' });
+         .font('Helvetica')
+         .text(invoice.invoiceNumber || 'INV-000', 350, 65, { align: 'right' });
 
       // --- CUSTOMER & MERCHANT INFO ---
       doc.fillColor('#000000').fontSize(10);
       
       // Merchant (Left)
-      doc.font('Helvetica-Bold').text('MERCHANT DETAILS', 50, 150);
-      doc.font('Helvetica').text('ElectroFix HQ - Service Center', 50, 165);
-      doc.text('GSTIN: 33AAAAA0000A1Z5', 50, 180);
-      doc.text('Chennai, Tamil Nadu', 50, 195);
+      doc.font('Helvetica-Bold').fillColor('#0CB9C1').text('MERCHANT DETAILS', 50, 165);
+      doc.font('Helvetica').fillColor('#334155').text('Sri Senthil Spares & Services', 50, 180);
+      doc.text('GSTIN: 33AAAAA0000A1Z5', 50, 195);
+      doc.text('Chennai, Tamil Nadu', 50, 210);
 
       // Customer (Right)
-      doc.font('Helvetica-Bold').text('BILL TO', 350, 150);
-      doc.font('Helvetica').text(invoice.customer?.fullName || 'Valued Customer', 350, 165);
-      doc.text(invoice.customer?.phoneNumber || 'N/A', 350, 180);
-      doc.text(invoice.customer?.email || '', 350, 195);
+      doc.font('Helvetica-Bold').fillColor('#0CB9C1').text('BILL TO', 350, 165);
+      doc.font('Helvetica').fillColor('#334155').text(invoice.customer?.fullName || 'Valued Customer', 350, 180);
+      doc.text(`Phone: ${invoice.customer?.phoneNumber || 'N/A'}`, 350, 195);
+      doc.text(invoice.customer?.email || '', 350, 210);
 
       // --- METADATA BAR ---
-      doc.rect(50, 230, 500, 30).fill('#f1f5f9');
+      doc.rect(50, 240, 500, 30).fill('#f8fafc');
       doc.fillColor('#475569')
-         .font('Helvetica-Bold').text('DATE:', 65, 241)
-         .font('Helvetica').text(new Date(invoice.invoiceDate).toLocaleDateString(), 105, 241)
-         .font('Helvetica-Bold').text('STATUS:', 300, 241)
-         .font('Helvetica').text((invoice.paymentStatus || 'PAID').toUpperCase(), 355, 241);
+         .font('Helvetica-Bold').text('DATE:', 65, 251)
+         .font('Helvetica').text(new Date(invoice.invoiceDate).toLocaleDateString(), 105, 251)
+         .font('Helvetica-Bold').text('STATUS:', 300, 251)
+         .font('Helvetica').text((invoice.paymentStatus || 'PAID').toUpperCase(), 355, 251);
 
       // --- TABLE HEADER ---
-      let y = 280;
-      doc.fillColor('#334155').rect(50, y, 500, 25).fill();
+      let y = 290;
+      doc.fillColor('#0CB9C1').rect(50, y, 500, 25).fill();
       doc.fillColor('#ffffff')
          .font('Helvetica-Bold')
          .text('DESCRIPTION', 60, y + 8)
@@ -216,7 +265,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       
       items.forEach((item: any, i: number) => {
         if (i % 2 === 0) doc.rect(50, y - 8, 500, 25).fill('#f8fafc');
-        doc.fillColor('#000000')
+        doc.fillColor('#334155')
            .text(item.itemName || 'Service/Product', 60, y)
            .text((item.quantity || 1).toString(), 300, y)
            .text(`${Number(item.unitPrice || 0).toLocaleString()}`, 380, y)
@@ -226,11 +275,11 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
 
       // --- TOTALS ---
       y += 20;
-      doc.font('Helvetica-Bold').text('SUBTOTAL (INR):', 350, y)
+      doc.font('Helvetica-Bold').fillColor('#475569').text('SUBTOTAL (INR):', 350, y)
          .font('Helvetica').text(`${Number(invoice.subtotal || 0).toLocaleString()}`, 480, y);
       
       y += 20;
-      doc.fillColor('#1e40af').rect(340, y - 10, 220, 35).fill();
+      doc.fillColor('#0CB9C1').rect(340, y - 10, 220, 35).fill(); // Styled with cyan primary base color!
       doc.fillColor('#ffffff')
          .fontSize(14)
          .font('Helvetica-Bold')
