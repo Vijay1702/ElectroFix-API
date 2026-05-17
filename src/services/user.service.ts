@@ -117,5 +117,13 @@ export const deleteUser = async (id: string) => {
     throw { statusCode: 404, message: MESSAGES.USER.NOT_FOUND };
   }
 
-  return userRepository.remove(id);
+  try {
+    return await userRepository.remove(id);
+  } catch (error: any) {
+    if (error.code === 'P2003') {
+      // Soft delete if foreign key constraints prevent hard deletion
+      return await userRepository.update(id, { isActive: false });
+    }
+    throw error;
+  }
 };
