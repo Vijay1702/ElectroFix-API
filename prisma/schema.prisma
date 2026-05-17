@@ -28,13 +28,17 @@ model User {
   phoneNumber  String
   password     String
   isActive     Boolean  @default(true)
+  operationalStatus String  @default("Active")
+  perDaySalary      Decimal  @default(0) @db.Decimal(10,2)
 
-  repairJobs       RepairJob[]
-  statusChanges    RepairStatusHistory[]
-  stockMovements   StockMovement[]
-  payments         Payment[]
-  invoices         Invoice[]
-  notifications    Notification[]
+  repairJobs        RepairJob[]
+  statusChanges     RepairStatusHistory[]
+  stockMovements    StockMovement[]
+  payments          Payment[]
+  invoices          Invoice[]
+  notifications     Notification[]
+  attendances       Attendance[] @relation("EmployeeAttendance")
+  createdAttendance Attendance[] @relation("CreatedAttendance")
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -279,4 +283,17 @@ model FileUpload {
   mimeType       String
 
   createdAt      DateTime @default(now())
+}
+
+model Attendance {
+  id             String   @id @default(uuid())
+  employeeId     String
+  employee       User     @relation(name: "EmployeeAttendance", fields: [employeeId], references: [id], onDelete: Cascade)
+  attendanceDate DateTime
+  status         String   // "Present" | "Absent"
+  createdBy      String
+  creator        User     @relation(name: "CreatedAttendance", fields: [createdBy], references: [id])
+  createdAt      DateTime @default(now())
+
+  @@unique([employeeId, attendanceDate])
 }

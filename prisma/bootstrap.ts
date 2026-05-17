@@ -31,6 +31,8 @@ async function main() {
       phoneNumber: "9840012345",
       password: hashedPassword,
       isActive: true,
+      operationalStatus: "Active",
+      perDaySalary: 0,
       roleId: adminRole.id,
     },
   });

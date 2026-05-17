@@ -3,6 +3,7 @@ import { MESSAGES } from '../constants/messages.constants';
 import { PAYMENT_STATUS } from '../constants/payment-status.constants';
 import { generateInvoiceNumber } from '../utils/generate-code';
 import PDFDocument = require('pdfkit');
+import prisma from '../config/prisma.config';
 
 export const getInvoices = async (pagination: any, filters: { search?: string, status?: string }) => {
   const { skip, limit, all } = pagination;
@@ -55,7 +56,7 @@ export const createInvoice = async (payload: any, userId: string) => {
     paymentStatus = PAYMENT_STATUS.PARTIAL;
   }
 
-  return invoiceRepository.create({
+  const invoice = await invoiceRepository.create({
     ...rest,
     invoiceNumber,
     paidAmount,
@@ -65,6 +66,25 @@ export const createInvoice = async (payload: any, userId: string) => {
     invoiceDate: invoiceDate ? new Date(invoiceDate) : new Date(),
     createdBy: userId,
   });
+
+  if (paymentStatus === PAYMENT_STATUS.PAID && payload.repairJobId) {
+    await prisma.repairJob.update({
+      where: { id: payload.repairJobId },
+      data: { status: 'delivered' },
+    });
+    
+    await prisma.repairStatusHistory.create({
+      data: {
+        repairJob: { connect: { id: payload.repairJobId } },
+        oldStatus: 'pending_to_deliver',
+        newStatus: 'delivered',
+        user: { connect: { id: userId } },
+        notes: 'Status updated to delivered automatically as invoice payment completed in full.',
+      },
+    });
+  }
+
+  return invoice;
 };
 
 export const updateInvoice = async (id: string, payload: any) => {
@@ -87,7 +107,36 @@ export const updateInvoice = async (id: string, payload: any) => {
     }
   }
 
-  return invoiceRepository.update(id, payload);
+  const updatedInvoice = await invoiceRepository.update(id, payload);
+
+  if (updatedInvoice.paymentStatus === PAYMENT_STATUS.PAID && updatedInvoice.repairJobId) {
+    await prisma.repairJob.update({
+      where: { id: updatedInvoice.repairJobId },
+      data: { status: 'delivered' },
+    });
+
+    const existingHistory = await prisma.repairStatusHistory.findFirst({
+      where: {
+        repairJobId: updatedInvoice.repairJobId,
+        newStatus: 'delivered',
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!existingHistory) {
+      await prisma.repairStatusHistory.create({
+        data: {
+          repairJob: { connect: { id: updatedInvoice.repairJobId } },
+          oldStatus: 'pending_to_deliver',
+          newStatus: 'delivered',
+          user: { connect: { id: updatedInvoice.createdBy } },
+          notes: 'Status updated to delivered automatically as invoice payment completed in full.',
+        },
+      });
+    }
+  }
+
+  return updatedInvoice;
 };
 
 export const deleteInvoice = async (id: string) => {

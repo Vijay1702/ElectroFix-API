@@ -9,6 +9,8 @@ export const createUserSchema = z.object({
     password: z.string().min(6, 'Password must be at least 6 characters'),
     role: z.enum(['ADMIN', 'TECHNICIAN']),
     isActive: z.boolean().optional(),
+    operationalStatus: z.enum(['Active', 'Inactive']).optional(),
+    perDaySalary: z.number().nonnegative('Daily salary must be at least 0').optional(),
   }),
 });
 
@@ -22,5 +24,7 @@ export const updateUserSchema = z.object({
     roleId: z.string().uuid().optional(),
     role: z.enum(['ADMIN', 'TECHNICIAN']).optional(),
     isActive: z.boolean().optional(),
+    operationalStatus: z.enum(['Active', 'Inactive']).optional(),
+    perDaySalary: z.number().nonnegative('Daily salary must be at least 0').optional(),
   }),
 });

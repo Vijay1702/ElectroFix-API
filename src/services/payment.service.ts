@@ -64,6 +64,23 @@ export const createPayment = async (payload: any, userId: string) => {
       },
     });
 
+    if (newStatus === PAYMENT_STATUS.PAID && invoice.repairJobId) {
+      await tx.repairJob.update({
+        where: { id: invoice.repairJobId },
+        data: { status: 'delivered' },
+      });
+
+      await tx.repairStatusHistory.create({
+        data: {
+          repairJob: { connect: { id: invoice.repairJobId } },
+          oldStatus: 'pending_to_deliver',
+          newStatus: 'delivered',
+          user: { connect: { id: userId } },
+          notes: 'Status updated to delivered automatically as invoice payment completed in full.',
+        },
+      });
+    }
+
     return payment;
   });
 };

@@ -19,7 +19,17 @@ export const getRepairJobs = async (pagination: any, filters: { search?: string,
   }
 
   if (status) {
-    where.status = status;
+    const statusArray = status.split(',').map(s => s.trim().toLowerCase());
+    const mappedStatuses = statusArray.map(s => {
+      if (s === 'completed') return 'pending_to_deliver';
+      return s;
+    });
+    
+    if (mappedStatuses.length > 1) {
+      where.status = { in: mappedStatuses };
+    } else {
+      where.status = mappedStatuses[0];
+    }
   }
 
   if (search) {

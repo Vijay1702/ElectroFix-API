@@ -70,7 +70,9 @@ export const createUser = async (payload: any) => {
     ...rest,
     email,
     password: hashedPassword,
-    roleId: roleRecord.id
+    roleId: roleRecord.id,
+    perDaySalary: rest.perDaySalary !== undefined ? rest.perDaySalary : 0,
+    operationalStatus: rest.operationalStatus || "Active"
   });
 
   const { password: _pw, ...createdWithoutPassword } = created as any;
@@ -117,13 +119,5 @@ export const deleteUser = async (id: string) => {
     throw { statusCode: 404, message: MESSAGES.USER.NOT_FOUND };
   }
 
-  try {
-    return await userRepository.remove(id);
-  } catch (error: any) {
-    if (error.code === 'P2003') {
-      // Soft delete if foreign key constraints prevent hard deletion
-      return await userRepository.update(id, { isActive: false });
-    }
-    throw error;
-  }
+  return await userRepository.update(id, { operationalStatus: "Inactive" });
 };

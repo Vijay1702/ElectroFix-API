@@ -13,6 +13,7 @@ import reportRoutes from './report.routes';
 import notificationRoutes from './notification.routes';
 import settingRoutes from './setting.routes';
 import uploadRoutes from './upload.routes';
+import attendanceRoutes from './attendance.routes';
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use('/reports', reportRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/settings', settingRoutes);
 router.use('/uploads', uploadRoutes);
+router.use('/attendance', attendanceRoutes);
 
 export default router;

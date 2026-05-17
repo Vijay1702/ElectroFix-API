@@ -44,6 +44,8 @@ async function main() {
       phoneNumber: "9840012345",
       password: hashedPassword,
       isActive: true,
+      operationalStatus: "Active",
+      perDaySalary: 0,
       roleId: adminRole.id,
     },
   });
@@ -55,6 +57,8 @@ async function main() {
       phoneNumber: "9840054321",
       password: hashedPassword,
       isActive: true,
+      operationalStatus: "Active",
+      perDaySalary: 750.00,
       roleId: technicianRole.id,
     },
   });
