@@ -12,7 +12,8 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
       search: search as string,
       categoryId: categoryId as string
     });
-    return paginatedResponse(res, products, total, pagination.page, pagination.limit, MESSAGES.PRODUCT.FETCHED);
+    const limit = pagination.all ? total : pagination.limit;
+    return paginatedResponse(res, products, total, pagination.page, limit, MESSAGES.PRODUCT.FETCHED);
   } catch (error) {
     next(error);
   }

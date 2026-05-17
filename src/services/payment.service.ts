@@ -6,8 +6,10 @@ import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma.config';
 
 export const getPayments = async (pagination: any) => {
-  const { skip, limit } = pagination;
-  const payments = await paymentRepository.list({ skip, take: limit });
+  const { skip, limit, all } = pagination;
+  const payments = await paymentRepository.list({
+    ...(all ? {} : { skip, take: limit })
+  });
   const total = await paymentRepository.count();
 
   return { payments, total };

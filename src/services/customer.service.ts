@@ -3,7 +3,7 @@ import { MESSAGES } from '../constants/messages.constants';
 import { generateCustomerCode } from '../utils/generate-code';
 
 export const getCustomers = async (pagination: any, search?: string) => {
-  const { skip, limit } = pagination;
+  const { skip, limit, all } = pagination;
   
   const where: any = {};
   if (search) {
@@ -15,7 +15,10 @@ export const getCustomers = async (pagination: any, search?: string) => {
     ];
   }
 
-  const customers = await customerRepository.list({ skip, take: limit, where });
+  const customers = await customerRepository.list({
+    ...(all ? {} : { skip, take: limit }),
+    where
+  });
   const total = await customerRepository.count(where);
 
   return { customers, total };

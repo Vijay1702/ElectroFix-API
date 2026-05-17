@@ -13,7 +13,8 @@ export const getInvoices = async (req: Request, res: Response, next: NextFunctio
       search: search as string,
       status: status as string
     });
-    return paginatedResponse(res, invoices, total, pagination.page, pagination.limit, MESSAGES.INVOICE.FETCHED);
+    const limit = pagination.all ? total : pagination.limit;
+    return paginatedResponse(res, invoices, total, pagination.page, limit, MESSAGES.INVOICE.FETCHED);
   } catch (error) {
     next(error);
   }

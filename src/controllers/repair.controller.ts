@@ -14,7 +14,8 @@ export const getRepairJobs = async (req: AuthRequest, res: Response, next: NextF
       { search: search as string, status: status as string },
       req.user
     );
-    return paginatedResponse(res, repairs, total, pagination.page, pagination.limit, MESSAGES.REPAIR.FETCHED);
+    const limit = pagination.all ? total : pagination.limit;
+    return paginatedResponse(res, repairs, total, pagination.page, limit, MESSAGES.REPAIR.FETCHED);
   } catch (error) {
     next(error);
   }

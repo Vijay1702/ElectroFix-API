@@ -3,7 +3,7 @@ import { MESSAGES } from '../constants/messages.constants';
 import { generateProductCode } from '../utils/generate-code';
 
 export const getProducts = async (pagination: any, filters: { search?: string, categoryId?: string }) => {
-  const { skip, limit } = pagination;
+  const { skip, limit, all } = pagination;
   const { search, categoryId } = filters;
 
   const where: any = {};
@@ -22,7 +22,10 @@ export const getProducts = async (pagination: any, filters: { search?: string, c
     ];
   }
 
-  const products = await productRepository.list({ skip, take: limit, where });
+  const products = await productRepository.list({
+    ...(all ? {} : { skip, take: limit }),
+    where
+  });
   const total = await productRepository.count(where);
 
   return { products, total };

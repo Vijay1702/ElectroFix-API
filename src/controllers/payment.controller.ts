@@ -9,7 +9,8 @@ export const getPayments = async (req: Request, res: Response, next: NextFunctio
   try {
     const pagination = parsePagination(req);
     const { payments, total } = await paymentService.getPayments(pagination);
-    return paginatedResponse(res, payments, total, pagination.page, pagination.limit, MESSAGES.PAYMENT.FETCHED);
+    const limit = pagination.all ? total : pagination.limit;
+    return paginatedResponse(res, payments, total, pagination.page, limit, MESSAGES.PAYMENT.FETCHED);
   } catch (error) {
     next(error);
   }

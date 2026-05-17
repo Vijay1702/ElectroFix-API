@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ROLES } from '../constants/roles.constants';
+
 
 export const createUserSchema = z.object({
   body: z.object({
@@ -7,10 +7,11 @@ export const createUserSchema = z.object({
     email: z.string().email('Invalid email address'),
     phoneNumber: z.string().min(10, 'Phone number must be at least 10 characters'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
-    roleId: z.string().uuid('Invalid role ID'),
+    role: z.enum(['ADMIN', 'TECHNICIAN']),
     isActive: z.boolean().optional(),
   }),
 });
+
 
 export const updateUserSchema = z.object({
   body: z.object({
@@ -19,6 +20,7 @@ export const updateUserSchema = z.object({
     phoneNumber: z.string().min(10).optional(),
     password: z.string().min(6).optional(),
     roleId: z.string().uuid().optional(),
+    role: z.enum(['ADMIN', 'TECHNICIAN']).optional(),
     isActive: z.boolean().optional(),
   }),
 });

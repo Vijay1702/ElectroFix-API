@@ -12,7 +12,8 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction) 
       role: role as string, 
       search: search as string 
     });
-    return paginatedResponse(res, users, total, pagination.page, pagination.limit, MESSAGES.USER.FETCHED);
+    const limit = pagination.all ? total : pagination.limit;
+    return paginatedResponse(res, users, total, pagination.page, limit, MESSAGES.USER.FETCHED);
   } catch (error) {
     next(error);
   }

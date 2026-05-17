@@ -15,16 +15,18 @@ export const findById = async (id: string): Promise<(User & { role: { name: stri
   });
 };
 
-export const create = async (data: Prisma.UserCreateInput): Promise<User> => {
+export const create = async (data: Prisma.UserCreateInput): Promise<User & { role: { name: string } }> => {
   return prisma.user.create({
     data,
+    include: { role: { select: { name: true } } },
   });
 };
 
-export const update = async (id: string, data: Prisma.UserUpdateInput): Promise<User> => {
+export const update = async (id: string, data: Prisma.UserUpdateInput): Promise<User & { role: { name: string } }> => {
   return prisma.user.update({
     where: { id },
     data,
+    include: { role: { select: { name: true } } },
   });
 };
 

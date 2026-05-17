@@ -9,7 +9,8 @@ export const getCustomers = async (req: Request, res: Response, next: NextFuncti
     const pagination = parsePagination(req);
     const search = req.query.search as string;
     const { customers, total } = await customerService.getCustomers(pagination, search);
-    return paginatedResponse(res, customers, total, pagination.page, pagination.limit, MESSAGES.CUSTOMER.FETCHED);
+    const limit = pagination.all ? total : pagination.limit;
+    return paginatedResponse(res, customers, total, pagination.page, limit, MESSAGES.CUSTOMER.FETCHED);
   } catch (error) {
     next(error);
   }

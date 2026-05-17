@@ -5,7 +5,7 @@ import { generateInvoiceNumber } from '../utils/generate-code';
 import PDFDocument = require('pdfkit');
 
 export const getInvoices = async (pagination: any, filters: { search?: string, status?: string }) => {
-  const { skip, limit } = pagination;
+  const { skip, limit, all } = pagination;
   const { search, status } = filters;
 
   const where: any = {};
@@ -23,7 +23,10 @@ export const getInvoices = async (pagination: any, filters: { search?: string, s
     ];
   }
 
-  const invoices = await invoiceRepository.list({ skip, take: limit, where });
+  const invoices = await invoiceRepository.list({
+    ...(all ? {} : { skip, take: limit }),
+    where
+  });
   const total = await invoiceRepository.count(where);
 
   return { invoices, total };

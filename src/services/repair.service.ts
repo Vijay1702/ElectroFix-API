@@ -5,7 +5,7 @@ import { generateJobNumber } from '../utils/generate-code';
 import * as notificationService from './notification.service';
 
 export const getRepairJobs = async (pagination: any, filters: { search?: string, status?: string }, currentUser: any) => {
-  const { skip, limit } = pagination;
+  const { skip, limit, all } = pagination;
   const { search, status } = filters;
 
   const where: any = {};
@@ -35,7 +35,10 @@ export const getRepairJobs = async (pagination: any, filters: { search?: string,
     ];
   }
 
-  const repairs = await repairRepository.list({ skip, take: limit, where });
+  const repairs = await repairRepository.list({
+    ...(all ? {} : { skip, take: limit }),
+    where
+  });
   const total = await repairRepository.count(where);
 
   return { repairs, total };

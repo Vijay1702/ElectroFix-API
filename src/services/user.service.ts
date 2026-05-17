@@ -4,7 +4,7 @@ import { MESSAGES } from '../constants/messages.constants';
 import prisma from '../config/prisma.config';
 
 export const getUsers = async (pagination: any, filters: { role?: string; search?: string } = {}) => {
-  const { skip, limit } = pagination;
+  const { skip, limit, all } = pagination;
   const { role, search } = filters;
 
   const where: any = {};
@@ -21,7 +21,10 @@ export const getUsers = async (pagination: any, filters: { role?: string; search
     ];
   }
 
-  const users = await userRepository.list({ skip, take: limit, where });
+  const users = await userRepository.list({
+    ...(all ? {} : { skip, take: limit }),
+    where
+  });
   const total = await userRepository.count(where);
 
   // Remove passwords from response
@@ -63,12 +66,15 @@ export const createUser = async (payload: any) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  return userRepository.create({
+  const created = await userRepository.create({
     ...rest,
     email,
     password: hashedPassword,
     roleId: roleRecord.id
   });
+
+  const { password: _pw, ...createdWithoutPassword } = created as any;
+  return createdWithoutPassword;
 };
 
 export const updateUser = async (id: string, payload: any) => {
@@ -88,7 +94,21 @@ export const updateUser = async (id: string, payload: any) => {
     payload.password = await bcrypt.hash(payload.password, 10);
   }
 
-  return userRepository.update(id, payload);
+  const { role, ...updateData } = payload;
+
+  if (role) {
+    const roleRecord = await prisma.role.findUnique({
+      where: { name: role }
+    });
+    if (!roleRecord) {
+      throw { statusCode: 400, message: 'Invalid role specified' };
+    }
+    updateData.roleId = roleRecord.id;
+  }
+
+  const updated = await userRepository.update(id, updateData);
+  const { password: _pw, ...updatedWithoutPassword } = updated as any;
+  return updatedWithoutPassword;
 };
 
 export const deleteUser = async (id: string) => {
