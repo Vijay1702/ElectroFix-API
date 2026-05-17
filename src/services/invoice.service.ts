@@ -201,7 +201,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc.fillColor('#0CB9C1').rect(0, 0, 595, 140).fill(); 
       
       // Load and render corporate logo
-      const logoPath = path.join(__dirname, '../assets/logo.jpg');
+      const logoPath = path.join(__dirname, '../assets/logo.png');
       if (fs.existsSync(logoPath)) {
         doc.image(logoPath, 40, 35, { width: 70, height: 70 });
       }
@@ -214,7 +214,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
          .fontSize(7)
          .font('Helvetica')
          .text('MOTORS, FANS, MIXERS, ELECTRICAL & INDUSTRIAL SERVICES', 125, 68)
-         .text('GSTIN: 33AAAAA0000A1Z5 | Chennai, Tamil Nadu', 125, 83);
+         .text('thalayari street, pattukkottai, thanjavur district, tamil nadu - 614601', 125, 83);
 
       // Invoice designation & number on the right
       doc.fillColor('#ffffff')
@@ -230,9 +230,9 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       
       // Merchant (Left)
       doc.font('Helvetica-Bold').fillColor('#0CB9C1').text('MERCHANT DETAILS', 50, 165);
-      doc.font('Helvetica').fillColor('#334155').text('Sri Senthil Spares & Services', 50, 180);
-      doc.text('GSTIN: 33AAAAA0000A1Z5', 50, 195);
-      doc.text('Chennai, Tamil Nadu', 50, 210);
+      doc.font('Helvetica').fillColor('#334155').text('Sri Senthil Spares & Services,', 50, 180);
+      doc.text('thalayari street, pattukkottai', 50, 195);
+      doc.text('thanjavur district , tamil nadu - 614601', 50, 210);
 
       // Customer (Right)
       doc.font('Helvetica-Bold').fillColor('#0CB9C1').text('BILL TO', 350, 165);
