@@ -3,6 +3,7 @@ import { MESSAGES } from '../constants/messages.constants';
 import { REPAIR_STATUS } from '../constants/repair-status.constants';
 import { generateJobNumber } from '../utils/generate-code';
 import * as notificationService from './notification.service';
+import * as invoiceService from './invoice.service';
 
 export const getRepairJobs = async (pagination: any, filters: { search?: string, status?: string }, currentUser: any) => {
   const { skip, limit, all } = pagination;
@@ -94,6 +95,29 @@ export const createRepairJob = async (payload: any, creatorId: string) => {
       `You have been assigned a new repair job: ${repair.jobNumber} (${repair.brand} ${repair.model})`,
       'assignment'
     );
+  }
+
+  // Create invoice automatically if advanceAmount is provided
+  if (repair.advanceAmount && Number(repair.advanceAmount) > 0) {
+    const invoicePayload = {
+      customerId: repair.customerId,
+      repairJobId: repair.id,
+      subtotal: Number(repair.estimatedCost),
+      discount: 0,
+      tax: 0,
+      grandTotal: Number(repair.estimatedCost),
+      paidAmount: Number(repair.advanceAmount),
+      items: [
+        {
+          itemName: `Advance Payment for Repair Job #${repair.jobNumber} (${repair.deviceType}${repair.brand ? ' - ' + repair.brand : ''}${repair.model ? ' - ' + repair.model : ''})`,
+          itemType: 'SERVICE',
+          quantity: 1,
+          unitPrice: Number(repair.estimatedCost),
+          totalPrice: Number(repair.estimatedCost),
+        }
+      ]
+    };
+    await invoiceService.createInvoice(invoicePayload, creatorId);
   }
 
   return repair;
