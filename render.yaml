@@ -3,8 +3,8 @@ services:
     name: electrofix-api
     env: node
     region: singapore
-    rootDir: .
-    buildCommand: npm install && npm run build && npx prisma generate && npx prisma migrate deploy
+    rootDir: ElectroFix-API
+    buildCommand: npm install --production=false && npm run build && npx prisma generate && npx prisma migrate deploy
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
