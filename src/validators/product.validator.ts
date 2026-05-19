@@ -11,6 +11,8 @@ export const createProductSchema = z.object({
     minimumStock: z.number().int().min(0),
     description: z.string().optional(),
     imageUrl: z.string().optional(),
+    shelf: z.string().optional(),
+    row: z.string().optional(),
   }),
 });
 
@@ -25,5 +27,7 @@ export const updateProductSchema = z.object({
     minimumStock: z.number().int().min(0).optional(),
     description: z.string().optional(),
     imageUrl: z.string().optional(),
+    shelf: z.string().optional(),
+    row: z.string().optional(),
   }),
 });

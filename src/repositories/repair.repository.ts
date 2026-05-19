@@ -1,7 +1,7 @@
 import { Prisma, RepairJob, RepairStatusHistory } from '@prisma/client';
 import prisma from '../config/prisma.config';
 
-export const findById = async (id: string): Promise<(RepairJob & { customer: any; technician: any; statusHistory: any[] }) | null> => {
+export const findById = async (id: string): Promise<any | null> => {
   return prisma.repairJob.findUnique({
     where: { id },
     include: {
@@ -15,6 +15,7 @@ export const findById = async (id: string): Promise<(RepairJob & { customer: any
         },
         orderBy: { createdAt: 'desc' },
       },
+      invoices: true,
     },
   });
 };
@@ -32,12 +33,13 @@ export const update = async (id: string, data: Prisma.RepairJobUpdateInput): Pro
   });
 };
 
-export const list = async (params: { skip?: number; take?: number; where?: Prisma.RepairJobWhereInput }): Promise<RepairJob[]> => {
+export const list = async (params: { skip?: number; take?: number; where?: Prisma.RepairJobWhereInput }): Promise<any[]> => {
   return prisma.repairJob.findMany({
     ...params,
     include: {
       customer: true,
       technician: { select: { id: true, fullName: true } },
+      invoices: true,
     },
     orderBy: { createdAt: 'desc' },
   });

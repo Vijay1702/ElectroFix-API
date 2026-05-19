@@ -141,6 +141,8 @@ model Product {
 
   description     String?
   imageUrl        String?
+  shelf           String?
+  row             String?
 
   invoiceItems    InvoiceItem[]
   stockMovements  StockMovement[]

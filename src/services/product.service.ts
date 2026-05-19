@@ -19,6 +19,8 @@ export const getProducts = async (pagination: any, filters: { search?: string, c
       { productCode: { contains: search, mode: 'insensitive' } },
       { description: { contains: search, mode: 'insensitive' } },
       { category: { name: { contains: search, mode: 'insensitive' } } },
+      { shelf: { contains: search, mode: 'insensitive' } },
+      { row: { contains: search, mode: 'insensitive' } },
     ];
   }
 
