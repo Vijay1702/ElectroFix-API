@@ -3,7 +3,7 @@ import { REPAIR_STATUS } from '../constants/repair-status.constants';
 
 export const getSummary = async (currentUser: any) => {
   const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const firstDayOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
 
   const repairWhere: any = {};
   if (currentUser?.role !== 'ADMIN') {
@@ -17,7 +17,10 @@ export const getSummary = async (currentUser: any) => {
     completedRepairs,
     totalSales,
     monthlySales,
-    lowStockCount
+    lowStockCount,
+    activeRepairs,
+    notStartedRepairs,
+    attendances
   ] = await Promise.all([
     prisma.customer.count(),
     prisma.repairJob.count({ where: repairWhere }),
@@ -32,7 +35,9 @@ export const getSummary = async (currentUser: any) => {
     prisma.repairJob.count({
       where: { 
         ...repairWhere,
-        status: REPAIR_STATUS.DELIVERED 
+        status: {
+          in: [REPAIR_STATUS.DELIVERED, 'DELIVERED', 'COMPLETED', 'completed']
+        }
       },
     }),
     prisma.invoice.aggregate({
@@ -45,11 +50,49 @@ export const getSummary = async (currentUser: any) => {
     prisma.product.count({
       where: {
         stockQuantity: {
-          lte: 10, // Default low stock threshold
+          lte: prisma.product.fields.minimumStock,
+        },
+      },
+    }),
+    prisma.repairJob.count({
+      where: {
+        ...repairWhere,
+        status: {
+          in: ['work_in_progress', 'IN_PROGRESS', 'in_progress', 'WORK_IN_PROGRESS'],
+        },
+      },
+    }),
+    prisma.repairJob.count({
+      where: {
+        ...repairWhere,
+        status: {
+          in: ['not_started', 'PENDING', 'pending', 'NOT_STARTED'],
+        },
+      },
+    }),
+    prisma.attendance.findMany({
+      where: {
+        attendanceDate: {
+          gte: firstDayOfMonth,
+        },
+        status: 'Present',
+      },
+      include: {
+        employee: {
+          select: {
+            perDaySalary: true,
+          },
         },
       },
     }),
   ]);
+
+  const totalSalaries = attendances.reduce((acc, curr) => {
+    return acc + (Number(curr.employee?.perDaySalary) || 0);
+  }, 0);
+
+  const monthlyGross = Number(monthlySales._sum.grandTotal || 0);
+  const monthlyRevenue = monthlyGross - totalSalaries;
 
   return {
     totalCustomers,
@@ -57,13 +100,18 @@ export const getSummary = async (currentUser: any) => {
     pendingRepairs,
     completedRepairs,
     totalSales: totalSales._sum.grandTotal || 0,
-    monthlyRevenue: monthlySales._sum.grandTotal || 0,
+    monthlyRevenue,
+    monthlyGross,
     lowStockCount,
+    activeRepairs,
+    notStartedRepairs,
     totalProducts: await prisma.product.count(),
     completedToday: await prisma.repairJob.count({
       where: { 
         ...repairWhere,
-        status: REPAIR_STATUS.DELIVERED,
+        status: {
+          in: [REPAIR_STATUS.DELIVERED, 'DELIVERED', 'COMPLETED', 'completed']
+        },
         updatedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
       }
     })
