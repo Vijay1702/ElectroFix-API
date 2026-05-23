@@ -55,10 +55,14 @@ async function main() {
     });
   }
 
-  // 3 Sample categories
+  // Sample categories
   const categories = [
-    { name: "Smartphones", description: "Mobile devices and accessories" },
-    { name: "Laptops", description: "Portable personal computers and upgrades" },
+    { name: "Fan", description: "Ceiling, table, and pedestal fans" },
+    { name: "Mixie", description: "Mixer grinders and blenders" },
+    { name: "Grinder", description: "Wet grinders and heavy duty grinders" },
+    { name: "Gas Stove", description: "Gas stoves and hobs" },
+    { name: "Motor", description: "Water motors and pumps" },
+    { name: "Iron Box", description: "Dry and steam irons" },
     { name: "Smart Home", description: "Smart home appliances and automation" },
   ];
 
@@ -75,7 +79,7 @@ async function main() {
 
   console.log("✅ Bootstrap complete!");
   console.log("   Roles created : ADMIN, TECHNICIAN");
-  console.log("   Categories    : Smartphones, Laptops, Smart Home");
+  console.log("   Categories    : Fan, Mixie, Grinder, Gas Stove, Motor, Iron Box, Smart Home");
   console.log("   Admin login   : admin@electrofix.com / Admin@123");
   console.log("   No sample data added — app is ready for real data.");
 }

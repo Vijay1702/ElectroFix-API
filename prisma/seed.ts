@@ -18,6 +18,7 @@ async function main() {
   await prisma.customer.deleteMany({});
   await prisma.notification.deleteMany({});
   await prisma.setting.deleteMany({});
+  await prisma.attendance.deleteMany({});
   await prisma.user.deleteMany({});
   await prisma.role.deleteMany({});
 
@@ -115,34 +116,38 @@ async function main() {
   }
 
   // Categories
-  const catPhones = await prisma.category.create({ data: { name: "Smartphones", description: "Mobile repairs and parts" } });
-  const catLaptops = await prisma.category.create({ data: { name: "Laptops", description: "Computing services" } });
+  const catFan = await prisma.category.create({ data: { name: "Fan", description: "Ceiling, table, and pedestal fans" } });
+  const catMixie = await prisma.category.create({ data: { name: "Mixie", description: "Mixer grinders and blenders" } });
+  const catGrinder = await prisma.category.create({ data: { name: "Grinder", description: "Wet grinders and heavy duty grinders" } });
+  const catGasStove = await prisma.category.create({ data: { name: "Gas Stove", description: "Gas stoves and hobs" } });
+  const catMotor = await prisma.category.create({ data: { name: "Motor", description: "Water motors and pumps" } });
+  const catIronBox = await prisma.category.create({ data: { name: "Iron Box", description: "Dry and steam irons" } });
   
   // Products
   const products = [];
   products.push(await prisma.product.create({
     data: {
-      categoryId: catPhones.id,
-      productCode: "PRD-SAM-DIS",
-      name: "Samsung Display Unit",
-      brand: "Samsung",
-      purchasePrice: 4500.0,
-      sellingPrice: 7500.0,
-      stockQuantity: 15,
-      minimumStock: 3,
+      categoryId: catFan.id,
+      productCode: "PRD-FAN-CAP",
+      name: "Fan Capacitor 2.5mfd",
+      brand: "Generic",
+      purchasePrice: 30.0,
+      sellingPrice: 60.0,
+      stockQuantity: 50,
+      minimumStock: 10,
     }
   }));
 
   products.push(await prisma.product.create({
     data: {
-      categoryId: catLaptops.id,
-      productCode: "PRD-DEL-BAT",
-      name: "Dell Original Battery",
-      brand: "Dell",
-      purchasePrice: 2200.0,
-      sellingPrice: 3800.0,
-      stockQuantity: 10,
-      minimumStock: 2,
+      categoryId: catMixie.id,
+      productCode: "PRD-MIX-JAR",
+      name: "Mixie Steel Jar",
+      brand: "Preethi",
+      purchasePrice: 250.0,
+      sellingPrice: 400.0,
+      stockQuantity: 20,
+      minimumStock: 5,
     }
   }));
 
@@ -158,10 +163,10 @@ async function main() {
         customerId: customer.id,
         technicianId: tech.id,
         jobNumber: `REP-TN-${2024001 + i}`,
-        deviceType: i % 2 === 0 ? "Smartphone" : "Laptop",
-        brand: i % 2 === 0 ? "Samsung" : "Dell",
-        model: i % 2 === 0 ? "Galaxy M34" : "Vostro 3510",
-        problemDescription: i % 3 === 0 ? "Display flickering" : "Water damage",
+        deviceType: i % 2 === 0 ? "Fan" : "Mixie",
+        brand: i % 2 === 0 ? "Crompton" : "Preethi",
+        model: i % 2 === 0 ? "High Speed 400mm" : "Zodiac 750W",
+        problemDescription: i % 3 === 0 ? "Not turning on" : "Making noise",
         status: status,
         receivedDate: new Date(),
         estimatedCost: 2000 + (i * 500),
