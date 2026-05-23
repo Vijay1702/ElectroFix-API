@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { AuthRequest } from '../types/express.d';
 import * as productService from '../services/product.service';
 import { successResponse, paginatedResponse } from '../utils/response';
 import { MESSAGES } from '../constants/messages.constants';
@@ -28,9 +29,10 @@ export const getProductById = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
+export const createProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const product = await productService.createProduct(req.body);
+    const userId = req.user!.id;
+    const product = await productService.createProduct(req.body, userId);
     return successResponse(res, product, MESSAGES.PRODUCT.CREATED, 201);
   } catch (error) {
     next(error);

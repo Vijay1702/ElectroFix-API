@@ -1,6 +1,7 @@
 import * as productRepository from '../repositories/product.repository';
 import { MESSAGES } from '../constants/messages.constants';
 import { generateProductCode } from '../utils/generate-code';
+import prisma from '../config/prisma.config';
 
 export const getProducts = async (pagination: any, filters: { search?: string, categoryId?: string }) => {
   const { skip, limit, all } = pagination;
@@ -43,12 +44,34 @@ export const getProductById = async (id: string) => {
   return product;
 };
 
-export const createProduct = async (payload: any) => {
+export const createProduct = async (payload: any, userId?: string) => {
   const productCode = await generateProductCode();
+  const { stockQuantity = 0, ...rest } = payload;
   
-  return productRepository.create({
-    ...payload,
-    productCode,
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.create({
+      data: {
+        ...rest,
+        stockQuantity,
+        productCode,
+      },
+    });
+
+    if (stockQuantity > 0 && userId) {
+      await tx.stockMovement.create({
+        data: {
+          productId: product.id,
+          movementType: 'IN',
+          quantity: stockQuantity,
+          previousStock: 0,
+          currentStock: stockQuantity,
+          referenceType: 'INITIAL',
+          createdBy: userId,
+        },
+      });
+    }
+
+    return product;
   });
 };
 

@@ -5,14 +5,21 @@ import prisma from "../config/prisma.config";
  */
 export const generateCustomerCode = async (): Promise<string> => {
   const lastCustomer = await prisma.customer.findFirst({
+    where: {
+      customerCode: {
+        startsWith: "CUST-",
+      },
+    },
     orderBy: { createdAt: "desc" },
     select: { customerCode: true },
   });
 
   let nextNumber = 1;
   if (lastCustomer?.customerCode) {
-    const lastNumber = parseInt(lastCustomer.customerCode.replace("CUST-", ""), 10);
-    nextNumber = lastNumber + 1;
+    const matches = lastCustomer.customerCode.match(/\d+$/);
+    if (matches) {
+      nextNumber = parseInt(matches[0], 10) + 1;
+    }
   }
 
   return `CUST-${String(nextNumber).padStart(4, "0")}`;
@@ -44,14 +51,21 @@ export const generateJobNumber = async (): Promise<string> => {
  */
 export const generateInvoiceNumber = async (): Promise<string> => {
   const lastInvoice = await prisma.invoice.findFirst({
+    where: {
+      invoiceNumber: {
+        startsWith: "INV-",
+      },
+    },
     orderBy: { createdAt: "desc" },
     select: { invoiceNumber: true },
   });
 
   let nextNumber = 1;
   if (lastInvoice?.invoiceNumber) {
-    const lastNumber = parseInt(lastInvoice.invoiceNumber.replace("INV-", ""), 10);
-    nextNumber = lastNumber + 1;
+    const matches = lastInvoice.invoiceNumber.match(/\d+$/);
+    if (matches) {
+      nextNumber = parseInt(matches[0], 10) + 1;
+    }
   }
 
   return `INV-${String(nextNumber).padStart(4, "0")}`;
@@ -62,15 +76,23 @@ export const generateInvoiceNumber = async (): Promise<string> => {
  */
 export const generateProductCode = async (): Promise<string> => {
   const lastProduct = await prisma.product.findFirst({
+    where: {
+      productCode: {
+        startsWith: "PROD-",
+      },
+    },
     orderBy: { createdAt: "desc" },
     select: { productCode: true },
   });
 
   let nextNumber = 1;
   if (lastProduct?.productCode) {
-    const lastNumber = parseInt(lastProduct.productCode.replace("PROD-", ""), 10);
-    nextNumber = lastNumber + 1;
+    const matches = lastProduct.productCode.match(/\d+$/);
+    if (matches) {
+      nextNumber = parseInt(matches[0], 10) + 1;
+    }
   }
 
   return `PROD-${String(nextNumber).padStart(4, "0")}`;
 };
+
