@@ -4,6 +4,7 @@ import { REPAIR_STATUS } from '../constants/repair-status.constants';
 import { generateJobNumber } from '../utils/generate-code';
 import * as notificationService from './notification.service';
 import * as invoiceService from './invoice.service';
+import prisma from '../config/prisma.config';
 
 export const getRepairJobs = async (pagination: any, filters: { search?: string, status?: string }, currentUser: any) => {
   const { skip, limit, all } = pagination;
@@ -66,9 +67,16 @@ export const getRepairJobById = async (id: string) => {
 };
 
 export const createRepairJob = async (payload: any, creatorId: string) => {
-  const jobNumber = await generateJobNumber();
+  const { jobNumber, receivedDate, expectedDeliveryDate, ...rest } = payload;
   
-  const { receivedDate, expectedDeliveryDate, ...rest } = payload;
+  if (!jobNumber) {
+    throw { statusCode: 400, message: "Job Number is required." };
+  }
+
+  const existingJob = await prisma.repairJob.findUnique({ where: { jobNumber } });
+  if (existingJob) {
+    throw { statusCode: 400, message: "A repair job with this Job Number already exists." };
+  }
 
   const repair = await repairRepository.create({
     ...rest,

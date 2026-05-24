@@ -1,6 +1,7 @@
 import * as customerRepository from '../repositories/customer.repository';
 import { MESSAGES } from '../constants/messages.constants';
 import { generateCustomerCode } from '../utils/generate-code';
+import prisma from '../config/prisma.config';
 
 export const getCustomers = async (pagination: any, search?: string) => {
   const { skip, limit, all } = pagination;
@@ -35,6 +36,15 @@ export const getCustomerById = async (id: string) => {
 };
 
 export const createCustomer = async (payload: any) => {
+  if (payload.phoneNumber) {
+    const existing = await prisma.customer.findUnique({
+      where: { phoneNumber: payload.phoneNumber }
+    });
+    if (existing) {
+      throw { statusCode: 400, message: "A customer with this phone number already exists." };
+    }
+  }
+
   const customerCode = await generateCustomerCode();
   
   return customerRepository.create({
@@ -47,6 +57,15 @@ export const updateCustomer = async (id: string, payload: any) => {
   const customer = await customerRepository.findById(id);
   if (!customer) {
     throw { statusCode: 404, message: MESSAGES.CUSTOMER.NOT_FOUND };
+  }
+
+  if (payload.phoneNumber && payload.phoneNumber !== customer.phoneNumber) {
+    const existing = await prisma.customer.findUnique({
+      where: { phoneNumber: payload.phoneNumber }
+    });
+    if (existing && existing.id !== id) {
+      throw { statusCode: 400, message: "A customer with this phone number already exists." };
+    }
   }
 
   return customerRepository.update(id, payload);
