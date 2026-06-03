@@ -235,7 +235,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
         .text("SRI SENTHIL SPARES AND SERVICES", 8, y, {
           align: "center",
         })
-        .text("Thalayari street, Pattukkottai - 614601", 8, y + 4, {
+        .text("Thalayari street, Pattukkottai - 614601", 8, y + 8, {
           align: "center",
         });
 
@@ -252,11 +252,11 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc
         .font("Helvetica-Bold")
         .fontSize(6)
-        .text("INVOICE : ", 8, y)
+        .text("INVOICE : ", 12, y)
         .font("Helvetica")
         .text(invoice.invoiceNumber, 45, y)
         .font("Helvetica-Bold")
-        .text("DATE : ", 8, y + 8)
+        .text("DATE : ", 12, y + 8)
         .font("Helvetica")
         .text(
           new Date(invoice.invoiceDate).toLocaleDateString("en-IN"),
@@ -264,14 +264,14 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
           y + 8,
         )
         .font("Helvetica-Bold")
-        .text("CUST NAME : ", 8, y + 16)
+        .text("CUST NAME : ", 12, y + 16)
         .font("Helvetica")
         .text(invoice.customer?.fullName, 45, y + 16, {
           width: 111,
           height: 8,
         })
         .font("Helvetica-Bold")
-        .text("PHONE NO : ", 8, y + 24)
+        .text("PHONE NO : ", 12, y + 24)
         .font("Helvetica")
         .text(invoice.customer?.phoneNumber, 45, y + 24);
 
