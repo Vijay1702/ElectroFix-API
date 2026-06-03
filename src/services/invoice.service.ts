@@ -235,7 +235,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
         .text("SRI SENTHIL SPARES AND SERVICES", 8, y, {
           align: "center",
         })
-        .text("Thalayari street, Pattukkottai - 614601", 8, y + 10, {
+        .text("Thalayari street, Pattukkottai - 614601", 8, y + 12, {
           align: "center",
         });
 
