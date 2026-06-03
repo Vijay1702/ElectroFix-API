@@ -246,7 +246,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
         .font("Helvetica-Bold")
         .fontSize(6)
         .text(
-          "---------------------------------------------------------------------------------",
+          "-------------------------------------------------------------------------",
           8,
           y,
         );
@@ -294,7 +294,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc
         .font("Helvetica")
         .text(
-          "---------------------------------------------------------------------------------",
+          "-------------------------------------------------------------------------",
           8,
           y,
         );
@@ -332,7 +332,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       // Divider
       doc
         .font("Helvetica-Bold")
-        .text("---------------------------------------------------------------------------------", 8, y);
+        .text("-------------------------------------------------------------------------", 8, y);
       y += 8;
 
       // Summary
