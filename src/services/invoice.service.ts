@@ -214,20 +214,24 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       let y = 8;
       
       // Load and render corporate logo (smaller for 58mm)
-      const logoPath = path.join(__dirname, '../assets/logo.png');
+      const logoPath = path.join(process.cwd(), 'src/assets/logo.png');
       if (fs.existsSync(logoPath)) {
         doc.image(logoPath, (164 - 30) / 2, y, { width: 30, height: 30 });
         y += 33;
       }
       
-      doc.fillColor('#000000')
-         .fontSize(8)
-         .font('Helvetica-Bold')
-         .text('SRI SENTHIL SPARES', 8, y, { align: 'center', width: 148 })
-         .fontSize(5)
-         .font('Helvetica')
-         .text('MOTORS, FANS, MIXERS, ELECTRICAL SERVICES', 8, y + 10, { align: 'center', width: 148 })
-         .text('Thalayari street, Pattukkottai - 614601', 8, y + 22, { align: 'center', width: 148 });
+      doc
+        .fillColor("#000000")
+        .fontSize(8)
+        .font("Helvetica-Bold")
+        .text("SRI SENTHIL SPARES AND SERVICES", 8, y, {
+          align: "center",
+          width: 148,
+        })
+        .text("Thalayari street, Pattukkottai - 614601", 8, y + 22, {
+          align: "center",
+          width: 148,
+        });
          
       y += 32;
 
@@ -297,17 +301,17 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       // Summary
       doc.fontSize(6)
          .font('Helvetica-Bold')
-         .text('SUBTOTAL:', 45, y)
+         .text('SUBTOTAL:', 45, y, { width: 45, align: 'right' })
          .font('Helvetica')
          .text(Number(invoice.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }), 100, y, { width: 56, align: 'right' })
          
          .font('Helvetica-Bold')
-         .text('PAID:', 45, y + 8)
+         .text('PAID:', 45, y + 8, { width: 45, align: 'right' })
          .font('Helvetica')
          .text(Number(invoice.paidAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }), 100, y + 8, { width: 56, align: 'right' })
          
          .font('Helvetica-Bold')
-         .text('BALANCE:', 45, y + 16)
+         .text('BALANCE:', 45, y + 16, { width: 45, align: 'right' })
          .font('Helvetica')
          .text(Number(invoice.pendingAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }), 100, y + 16, { width: 56, align: 'right' });
 
