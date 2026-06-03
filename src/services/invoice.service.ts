@@ -252,28 +252,28 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc
         .font("Helvetica-Bold")
         .fontSize(6)
-        .text("INVOICE : ", 4, y)
+        .text("INVOICE", 4, y)
         .font("Helvetica")
-        .text(invoice.invoiceNumber, 45, y)
+        .text(": " + (invoice.invoiceNumber || "INV-000"), 45, y)
         .font("Helvetica-Bold")
-        .text("DATE : ", 4, y + 8)
+        .text("DATE", 4, y + 8)
         .font("Helvetica")
         .text(
-          new Date(invoice.invoiceDate).toLocaleDateString("en-IN"),
+          ": " + new Date(invoice.invoiceDate).toLocaleDateString("en-IN"),
           45,
           y + 8,
         )
         .font("Helvetica-Bold")
-        .text("CUST NAME : ", 4, y + 16)
+        .text("CUST NAME", 4, y + 16)
         .font("Helvetica")
-        .text(invoice.customer?.fullName, 45, y + 16, {
+        .text(": " + invoice.customer?.fullName, 45, y + 16, {
           width: 111,
           height: 8,
         })
         .font("Helvetica-Bold")
-        .text("PHONE NO : ", 4, y + 24)
+        .text("PHONE NO", 4, y + 24)
         .font("Helvetica")
-        .text(invoice.customer?.phoneNumber, 45, y + 24);
+        .text(": " + invoice.customer?.phoneNumber, 45, y + 24);
 
       y += 33;
 
@@ -391,7 +391,11 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
         .font("Helvetica")
         .fontSize(5)
         .fillColor("#64748b")
-        .text("Thank you! Visit again.Powered by ElectroFix", 8, y, {
+        .text("Thank you! Visit again.", 8, y, {
+          align: "center",
+          width: 148,
+        })
+        .text("Powered by ElectroFix", 8, y + 8, {
           align: "center",
           width: 148,
         });
