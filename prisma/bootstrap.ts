@@ -64,6 +64,7 @@ async function main() {
     { name: "Motor", description: "Water motors and pumps" },
     { name: "Iron Box", description: "Dry and steam irons" },
     { name: "Smart Home", description: "Smart home appliances and automation" },
+    { name: "Cooker", description: "Induction cookers and pressure cookers" },
   ];
 
   for (const c of categories) {
@@ -79,7 +80,7 @@ async function main() {
 
   console.log("✅ Bootstrap complete!");
   console.log("   Roles created : ADMIN, TECHNICIAN");
-  console.log("   Categories    : Fan, Mixie, Grinder, Gas Stove, Motor, Iron Box, Smart Home");
+  console.log("   Categories    : Fan, Mixie, Grinder, Gas Stove, Motor, Iron Box, Smart Home, Cooker");
   console.log("   Admin login   : admin@electrofix.com / Admin@123");
   console.log("   No sample data added — app is ready for real data.");
 }

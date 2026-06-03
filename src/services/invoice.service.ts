@@ -189,108 +189,145 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       const path = require('path');
       const fs = require('fs');
       
-      const doc = new PDFDocument({ margin: 50, size: 'A4' });
-      const buffers: Buffer[] = [];
+      const items = invoice.items || [];
+      // Estimate item heights dynamically based on character wrapping (approx 28 chars per line)
+      let itemHeight = 0;
+      items.forEach((item: any) => {
+        const lines = Math.ceil((item.itemName || '').length / 28) || 1;
+        itemHeight += (lines * 8) + 14;
+      });
       
+      // Base height for headers, metadata, summary box, and margins
+      const totalHeight = 140 + 8 + 35 + 15 + itemHeight + 8 + 70 + 40 + 20;
+      
+      const doc = new PDFDocument({ 
+        size: [164, totalHeight], 
+        margins: { top: 8, bottom: 8, left: 8, right: 8 } 
+      });
+      
+      const buffers: Buffer[] = [];
       doc.on('data', buffers.push.bind(buffers));
       doc.on('end', () => resolve(Buffer.concat(buffers)));
       doc.on('error', reject);
 
-      // --- BRANDING & HEADER ---
-      // Clean Cyan Primary Header block
-      doc.fillColor('#0CB9C1').rect(0, 0, 595, 140).fill(); 
+      // --- BRANDING & HEADER (58mm style) ---
+      let y = 8;
       
-      // Load and render corporate logo
+      // Load and render corporate logo (smaller for 58mm)
       const logoPath = path.join(__dirname, '../assets/logo.png');
       if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, 40, 35, { width: 70, height: 70 });
+        doc.image(logoPath, (164 - 30) / 2, y, { width: 30, height: 30 });
+        y += 33;
       }
       
-      // Company name and slogan - beautifully spaced to avoid overlap
-      doc.fillColor('#ffffff')
-         .fontSize(16)
+      doc.fillColor('#000000')
+         .fontSize(8)
          .font('Helvetica-Bold')
-         .text('SRI SENTHIL SPARES & SERVICES', 125, 40)
-         .fontSize(7)
+         .text('SRI SENTHIL SPARES', 8, y, { align: 'center', width: 148 })
+         .fontSize(5)
          .font('Helvetica')
-         .text('MOTORS, FANS, MIXERS, ELECTRICAL & INDUSTRIAL SERVICES', 125, 68)
-         .text('thalayari street, pattukkottai, thanjavur district, tamil nadu - 614601', 125, 83);
+         .text('MOTORS, FANS, MIXERS, ELECTRICAL SERVICES', 8, y + 10, { align: 'center', width: 148 })
+         .text('Thalayari street, Pattukkottai - 614601', 8, y + 22, { align: 'center', width: 148 });
+         
+      y += 32;
 
-      // Invoice designation & number on the right
-      doc.fillColor('#ffffff')
-         .fontSize(16)
-         .font('Helvetica-Bold')
-         .text('OFFICIAL INVOICE', 350, 40, { align: 'right' })
-         .fontSize(12)
+      // Divider
+      doc.font('Helvetica-Bold').fontSize(6).text('------------------------------------------', 8, y);
+      y += 8;
+
+      // Invoice Details
+      doc.font('Helvetica-Bold')
+         .fontSize(6)
+         .text('INVOICE:', 8, y)
          .font('Helvetica')
-         .text(invoice.invoiceNumber || 'INV-000', 350, 65, { align: 'right' });
-
-      // --- CUSTOMER & MERCHANT INFO ---
-      doc.fillColor('#000000').fontSize(10);
-      
-      // Merchant (Left)
-      doc.font('Helvetica-Bold').fillColor('#0CB9C1').text('MERCHANT DETAILS', 50, 165);
-      doc.font('Helvetica').fillColor('#334155').text('Sri Senthil Spares & Services,', 50, 180);
-      doc.text('thalayari street, pattukkottai', 50, 195);
-      doc.text('thanjavur district , tamil nadu - 614601', 50, 210);
-
-      // Customer (Right)
-      doc.font('Helvetica-Bold').fillColor('#0CB9C1').text('BILL TO', 350, 165);
-      doc.font('Helvetica').fillColor('#334155').text(invoice.customer?.fullName || 'Valued Customer', 350, 180);
-      doc.text(`Phone: ${invoice.customer?.phoneNumber || 'N/A'}`, 350, 195);
-      doc.text(invoice.customer?.email || '', 350, 210);
-
-      // --- METADATA BAR ---
-      doc.rect(50, 240, 500, 30).fill('#f8fafc');
-      doc.fillColor('#475569')
-         .font('Helvetica-Bold').text('DATE:', 65, 251)
-         .font('Helvetica').text(new Date(invoice.invoiceDate).toLocaleDateString(), 105, 251)
-         .font('Helvetica-Bold').text('STATUS:', 300, 251)
-         .font('Helvetica').text((invoice.paymentStatus || 'PAID').toUpperCase(), 355, 251);
-
-      // --- TABLE HEADER ---
-      let y = 290;
-      doc.fillColor('#0CB9C1').rect(50, y, 500, 25).fill();
-      doc.fillColor('#ffffff')
+         .text(invoice.invoiceNumber || 'INV-000', 45, y)
          .font('Helvetica-Bold')
-         .text('DESCRIPTION', 60, y + 8)
-         .text('QTY', 300, y + 8)
-         .text('RATE (INR)', 380, y + 8)
-         .text('TOTAL (INR)', 480, y + 8);
+         .text('DATE:', 8, y + 8)
+         .font('Helvetica')
+         .text(new Date(invoice.invoiceDate).toLocaleDateString('en-IN'), 45, y + 8)
+         .font('Helvetica-Bold')
+         .text('CUST:', 8, y + 16)
+         .font('Helvetica')
+         .text(invoice.customer?.fullName || 'Valued Customer', 45, y + 16, { width: 111, height: 8 })
+         .font('Helvetica-Bold')
+         .text('PHONE:', 8, y + 24)
+         .font('Helvetica')
+         .text(invoice.customer?.phoneNumber || 'N/A', 45, y + 24);
 
-      // --- TABLE ITEMS ---
-      y += 35;
-      doc.fillColor('#000000').font('Helvetica');
-      const items = invoice.items || [];
-      
-      items.forEach((item: any, i: number) => {
-        if (i % 2 === 0) doc.rect(50, y - 8, 500, 25).fill('#f8fafc');
-        doc.fillColor('#334155')
-           .text(item.itemName || 'Service/Product', 60, y)
-           .text((item.quantity || 1).toString(), 300, y)
-           .text(`${Number(item.unitPrice || 0).toLocaleString()}`, 380, y)
-           .text(`${Number(item.totalPrice || 0).toLocaleString()}`, 480, y);
-        y += 25;
+      y += 33;
+
+      // Table Header
+      doc.fillColor('#000000')
+         .font('Helvetica-Bold')
+         .fontSize(6)
+         .text('ITEM', 8, y)
+         .text('QTY', 92, y, { width: 15, align: 'right' })
+         .text('PRICE (INR)', 112, y, { width: 44, align: 'right' });
+
+      y += 9;
+      doc.font('Helvetica').text('------------------------------------------', 8, y);
+      y += 8;
+
+      // Table Items
+      items.forEach((item: any) => {
+        const name = item.itemName || 'Item';
+        const qty = item.quantity || 1;
+        const price = Number(item.unitPrice || 0);
+        const total = Number(item.totalPrice || 0);
+        
+        doc.font('Helvetica-Bold')
+           .fontSize(6)
+           .text(name, 8, y, { width: 148 });
+        
+        // Dynamically shift Y by text height
+        y += doc.heightOfString(name, { width: 148 }) + 2;
+        
+        doc.font('Helvetica')
+           .fontSize(6)
+           .text(`  ${qty} x ${price.toFixed(1)}`, 8, y)
+           .text(total.toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 }), 112, y, { width: 44, align: 'right' });
+           
+        y += 10;
       });
 
-      // --- TOTALS ---
-      y += 20;
-      doc.font('Helvetica-Bold').fillColor('#475569').text('SUBTOTAL (INR):', 350, y)
-         .font('Helvetica').text(`${Number(invoice.subtotal || 0).toLocaleString()}`, 480, y);
-      
-      y += 20;
-      doc.fillColor('#0CB9C1').rect(340, y - 10, 220, 35).fill(); // Styled with cyan primary base color!
-      doc.fillColor('#ffffff')
-         .fontSize(14)
-         .font('Helvetica-Bold')
-         .text('GRAND TOTAL:', 350, y + 5)
-         .text(`INR ${Number(invoice.grandTotal || 0).toLocaleString()}`, 480, y + 5);
+      // Divider
+      doc.font('Helvetica-Bold').text('------------------------------------------', 8, y);
+      y += 8;
 
-      // --- FOOTER ---
-      doc.fillColor('#94a3b8')
-         .fontSize(8)
+      // Summary
+      doc.fontSize(6)
+         .font('Helvetica-Bold')
+         .text('SUBTOTAL:', 45, y)
          .font('Helvetica')
-         .text('This is a computer-generated invoice. No physical signature is required.', 50, 780, { align: 'center' });
+         .text(Number(invoice.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }), 100, y, { width: 56, align: 'right' })
+         
+         .font('Helvetica-Bold')
+         .text('PAID:', 45, y + 8)
+         .font('Helvetica')
+         .text(Number(invoice.paidAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }), 100, y + 8, { width: 56, align: 'right' })
+         
+         .font('Helvetica-Bold')
+         .text('BALANCE:', 45, y + 16)
+         .font('Helvetica')
+         .text(Number(invoice.pendingAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }), 100, y + 16, { width: 56, align: 'right' });
+
+      y += 26;
+
+      // Grand Total Highlight box
+      doc.rect(8, y, 148, 18).fill('#f1f5f9');
+      doc.fillColor('#000000')
+         .font('Helvetica-Bold')
+         .fontSize(7)
+         .text('GRAND TOTAL: INR ' + Number(invoice.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }), 12, y + 5, { align: 'center', width: 140 });
+
+      y += 24;
+
+      // Footer
+      doc.font('Helvetica')
+         .fontSize(5)
+         .fillColor('#64748b')
+         .text('Thank you! Visit again.', 8, y, { align: 'center', width: 148 })
+         .text('Powered by ElectroFix', 8, y + 7, { align: 'center', width: 148 });
 
       doc.end();
     } catch (err) {
