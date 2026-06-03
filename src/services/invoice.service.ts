@@ -318,7 +318,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc.fillColor('#000000')
          .font('Helvetica-Bold')
          .fontSize(7)
-         .text('GRAND TOTAL: INR ' + Number(invoice.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }), 12, y + 5, { align: 'center', width: 140 });
+         .text('TO BE PAID: INR ' + Number(invoice.pendingAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }), 12, y + 5, { align: 'center', width: 140 });
 
       y += 24;
 
