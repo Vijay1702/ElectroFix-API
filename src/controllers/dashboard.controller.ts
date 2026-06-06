@@ -6,7 +6,12 @@ import { AuthRequest } from '../types/express.d';
 
 export const getSummary = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const summary = await dashboardService.getSummary(req.user);
+    const { startDate, endDate } = req.query;
+    const summary = await dashboardService.getSummary(
+      req.user, 
+      startDate as string, 
+      endDate as string
+    );
     return successResponse(res, summary, MESSAGES.DASHBOARD.SUMMARY_FETCHED);
   } catch (error) {
     next(error);
