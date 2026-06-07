@@ -186,111 +186,258 @@ export const deleteInvoice = async (id: string) => {
 export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
     try {
-      const path = require('path');
-      const fs = require('fs');
-      
-      const doc = new PDFDocument({ margin: 50, size: 'A4' });
-      const buffers: Buffer[] = [];
-      
-      doc.on('data', buffers.push.bind(buffers));
-      doc.on('end', () => resolve(Buffer.concat(buffers)));
-      doc.on('error', reject);
+      const path = require("path");
+      const fs = require("fs");
 
-      // --- BRANDING & HEADER ---
-      // Clean Cyan Primary Header block
-      doc.fillColor('#0CB9C1').rect(0, 0, 595, 140).fill(); 
-      
-      // Load and render corporate logo
-      const logoPath = path.join(__dirname, '../assets/logo.png');
-      if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, 40, 35, { width: 70, height: 70 });
-      }
-      
-      // Company name and slogan - beautifully spaced to avoid overlap
-      doc.fillColor('#ffffff')
-         .fontSize(16)
-         .font('Helvetica-Bold')
-         .text('SRI SENTHIL SPARES & SERVICES', 125, 40)
-         .fontSize(7)
-         .font('Helvetica')
-         .text('MOTORS, FANS, MIXERS, ELECTRICAL & INDUSTRIAL SERVICES', 125, 68)
-         .text('thalayari street, pattukkottai, thanjavur district, tamil nadu - 614601', 125, 83);
-
-      // Invoice designation & number on the right
-      doc.fillColor('#ffffff')
-         .fontSize(16)
-         .font('Helvetica-Bold')
-         .text('OFFICIAL INVOICE', 350, 40, { align: 'right' })
-         .fontSize(12)
-         .font('Helvetica')
-         .text(invoice.invoiceNumber || 'INV-000', 350, 65, { align: 'right' });
-
-      // --- CUSTOMER & MERCHANT INFO ---
-      doc.fillColor('#000000').fontSize(10);
-      
-      // Merchant (Left)
-      doc.font('Helvetica-Bold').fillColor('#0CB9C1').text('MERCHANT DETAILS', 50, 165);
-      doc.font('Helvetica').fillColor('#334155').text('Sri Senthil Spares & Services,', 50, 180);
-      doc.text('thalayari street, pattukkottai', 50, 195);
-      doc.text('thanjavur district , tamil nadu - 614601', 50, 210);
-
-      // Customer (Right)
-      doc.font('Helvetica-Bold').fillColor('#0CB9C1').text('BILL TO', 350, 165);
-      doc.font('Helvetica').fillColor('#334155').text(invoice.customer?.fullName || 'Valued Customer', 350, 180);
-      doc.text(`Phone: ${invoice.customer?.phoneNumber || 'N/A'}`, 350, 195);
-      doc.text(invoice.customer?.email || '', 350, 210);
-
-      // --- METADATA BAR ---
-      doc.rect(50, 240, 500, 30).fill('#f8fafc');
-      doc.fillColor('#475569')
-         .font('Helvetica-Bold').text('DATE:', 65, 251)
-         .font('Helvetica').text(new Date(invoice.invoiceDate).toLocaleDateString(), 105, 251)
-         .font('Helvetica-Bold').text('STATUS:', 300, 251)
-         .font('Helvetica').text((invoice.paymentStatus || 'PAID').toUpperCase(), 355, 251);
-
-      // --- TABLE HEADER ---
-      let y = 290;
-      doc.fillColor('#0CB9C1').rect(50, y, 500, 25).fill();
-      doc.fillColor('#ffffff')
-         .font('Helvetica-Bold')
-         .text('DESCRIPTION', 60, y + 8)
-         .text('QTY', 300, y + 8)
-         .text('RATE (INR)', 380, y + 8)
-         .text('TOTAL (INR)', 480, y + 8);
-
-      // --- TABLE ITEMS ---
-      y += 35;
-      doc.fillColor('#000000').font('Helvetica');
       const items = invoice.items || [];
-      
-      items.forEach((item: any, i: number) => {
-        if (i % 2 === 0) doc.rect(50, y - 8, 500, 25).fill('#f8fafc');
-        doc.fillColor('#334155')
-           .text(item.itemName || 'Service/Product', 60, y)
-           .text((item.quantity || 1).toString(), 300, y)
-           .text(`${Number(item.unitPrice || 0).toLocaleString()}`, 380, y)
-           .text(`${Number(item.totalPrice || 0).toLocaleString()}`, 480, y);
-        y += 25;
+      // Estimate item heights dynamically based on character wrapping (approx 20 chars per line for width 74)
+      let itemHeight = 0;
+      items.forEach((item: any) => {
+        const lines = Math.ceil((item.itemName || "").length / 20) || 1;
+        itemHeight += lines * 8 + 12;
       });
 
-      // --- TOTALS ---
-      y += 20;
-      doc.font('Helvetica-Bold').fillColor('#475569').text('SUBTOTAL (INR):', 350, y)
-         .font('Helvetica').text(`${Number(invoice.subtotal || 0).toLocaleString()}`, 480, y);
-      
-      y += 20;
-      doc.fillColor('#0CB9C1').rect(340, y - 10, 220, 35).fill(); // Styled with cyan primary base color!
-      doc.fillColor('#ffffff')
-         .fontSize(14)
-         .font('Helvetica-Bold')
-         .text('GRAND TOTAL:', 350, y + 5)
-         .text(`INR ${Number(invoice.grandTotal || 0).toLocaleString()}`, 480, y + 5);
+      // Base height for header, dividers, metadata block, totals, footer, and margins
+      const baseHeight = 280;
+      const totalHeight = baseHeight + itemHeight;
 
-      // --- FOOTER ---
-      doc.fillColor('#94a3b8')
-         .fontSize(8)
-         .font('Helvetica')
-         .text('This is a computer-generated invoice. No physical signature is required.', 50, 780, { align: 'center' });
+      const doc = new PDFDocument({
+        size: [164, totalHeight],
+        margins: { top: 8, bottom: 8, left: 8, right: 8 },
+      });
+
+      const buffers: Buffer[] = [];
+      doc.on("data", buffers.push.bind(buffers));
+      doc.on("end", () => resolve(Buffer.concat(buffers)));
+      doc.on("error", reject);
+
+      let y = 8;
+
+      // Centered corporate logo
+      const logoPath = path.join(process.cwd(), "src/assets/logo.png");
+      if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, (164 - 24) / 2, y, { width: 24, height: 24 });
+        y += 28;
+      }
+
+      // Business Branding
+      doc
+        .fillColor("#000000")
+        .fontSize(9)
+        .font("Helvetica-Bold")
+        .text("SRI SENTHIL", 8, y, { align: "center", width: 148 });
+      y += 11;
+
+      doc
+        .fontSize(6.5)
+        .font("Helvetica-Bold")
+        .text("SPARES & SERVICES", 8, y, { align: "center", width: 148 });
+      y += 9;
+
+      doc
+        .fontSize(6)
+        .font("Helvetica")
+        .fillColor("#334155")
+        .text("Thalayari street, Pattukkottai - 614601", 8, y, { align: "center", width: 148 });
+      y += 12;
+
+      // Divider
+      doc
+        .moveTo(8, y)
+        .lineTo(156, y)
+        .lineWidth(0.5)
+        .strokeColor("#000000")
+        .stroke();
+      y += 5;
+
+      // RECEIPT Title
+      doc
+        .fillColor("#000000")
+        .fontSize(8.5)
+        .font("Helvetica-Bold")
+        .text("RECEIPT", 8, y, { align: "center", width: 148 });
+      y += 11;
+
+      // Date & Time formatting
+      const invDate = new Date(invoice.invoiceDate || new Date());
+      const dateStr = invDate.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).toUpperCase();
+      const timeStr = invDate.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+
+      const customerName = (invoice.customer?.fullName || "Guest").toUpperCase();
+      const customerPhone = invoice.customer?.phoneNumber || "";
+
+      // Metadata block (Date, Time, Invoice No., Customer details)
+      doc.font("Helvetica").fontSize(6.5).fillColor("#1e293b");
+      
+      doc.text(`DATE: ${dateStr} | TIME: ${timeStr}`, 8, y, { align: "center", width: 148 });
+      y += 8;
+      
+      doc.text(`TICKET: #${invoice.invoiceNumber || "INV-000"}`, 8, y, { align: "center", width: 148 });
+      y += 8;
+
+      doc.text(`CUSTOMER: ${customerName}`, 8, y, { align: "center", width: 148 });
+      y += 8;
+
+      if (customerPhone) {
+        doc.text(`PHONE: ${customerPhone}`, 8, y, { align: "center", width: 148 });
+        y += 8;
+      }
+      y += 3;
+
+      // Divider
+      doc
+        .moveTo(8, y)
+        .lineTo(156, y)
+        .lineWidth(0.5)
+        .strokeColor("#000000")
+        .stroke();
+      y += 4;
+
+      // Table Header
+      doc.font("Helvetica-Bold").fontSize(6).fillColor("#000000");
+      doc.text("ITEM", 8, y);
+      doc.text("QTY", 82, y, { width: 18, align: "center" });
+      doc.text("PRICE", 100, y, { width: 26, align: "right" });
+      doc.text("TOTAL", 126, y, { width: 30, align: "right" });
+      y += 8;
+
+      // Divider below headers
+      doc
+        .moveTo(8, y)
+        .lineTo(156, y)
+        .lineWidth(0.5)
+        .strokeColor("#000000")
+        .stroke();
+      y += 5;
+
+      // Table Items
+      items.forEach((item: any) => {
+        const name = item.itemName || "Item";
+        const qty = item.quantity || 1;
+        const price = Number(item.unitPrice || 0);
+        const total = Number(item.totalPrice || 0);
+
+        const startY = y;
+        doc.font("Helvetica-Bold").fontSize(6).fillColor("#000000").text(name, 8, startY, { width: 74 });
+        const textHeight = doc.heightOfString(name, { width: 74 });
+
+        doc.font("Helvetica")
+          .fontSize(6)
+          .fillColor("#000000")
+          .text(qty.toString(), 82, startY, { width: 18, align: "center" })
+          .text(price.toFixed(1), 100, startY, { width: 26, align: "right" })
+          .text(total.toFixed(1), 126, startY, { width: 30, align: "right" });
+
+        y = startY + Math.max(textHeight, 8) + 5;
+      });
+
+      // Divider below items
+      doc
+        .moveTo(8, y)
+        .lineTo(156, y)
+        .lineWidth(0.5)
+        .strokeColor("#000000")
+        .stroke();
+      y += 5;
+
+      // Summary
+      doc.font("Helvetica").fontSize(6).fillColor("#1e293b");
+
+      // Subtotal
+      doc.text("Subtotal:", 8, y)
+         .text(Number(invoice.subtotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
+      y += 8;
+
+      // Taxes
+      if (Number(invoice.tax || 0) > 0) {
+        doc.text("Taxes:", 8, y)
+           .text(Number(invoice.tax).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
+        y += 8;
+      }
+
+      // Discount
+      if (Number(invoice.discount || 0) > 0) {
+        doc.text("Discount:", 8, y)
+           .text("-" + Number(invoice.discount).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
+        y += 8;
+      }
+
+      // Divider before Grand Total
+      doc
+        .moveTo(8, y)
+        .lineTo(156, y)
+        .lineWidth(0.5)
+        .strokeColor("#000000")
+        .stroke();
+      y += 4;
+
+      // Grand Total Row
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#000000")
+         .text("GRAND TOTAL", 8, y)
+         .text("Rs. " + Number(invoice.grandTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
+      y += 10;
+
+      // Divider after Grand Total
+      doc
+        .moveTo(8, y)
+        .lineTo(156, y)
+        .lineWidth(0.5)
+        .strokeColor("#000000")
+        .stroke();
+      y += 5;
+
+      // Parse Payment Method from notes
+      let paymentMethod = "CASH";
+      if (invoice.notes) {
+        if (invoice.notes.includes("Payment Method: QR")) {
+          paymentMethod = "QR";
+        } else if (invoice.notes.includes("Payment Method: CASH")) {
+          paymentMethod = "CASH";
+        }
+      }
+
+      // Paid Amount
+      const paymentSuffix = paymentMethod ? ` (${paymentMethod})` : "";
+      doc.font("Helvetica").fontSize(6).fillColor("#1e293b")
+         .text(`PAID${paymentSuffix}:`, 8, y)
+         .text(Number(invoice.paidAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
+      y += 8;
+
+      // Balance Due or Change
+      const grandTotal = Number(invoice.grandTotal || 0);
+      const paid = Number(invoice.paidAmount || 0);
+      const balance = Number(invoice.pendingAmount || 0);
+      const change = Math.max(0, paid - grandTotal);
+
+      if (balance > 0) {
+        doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#991b1b")
+           .text("BALANCE DUE:", 8, y)
+           .text(balance.toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
+        y += 10;
+      } else if (change > 0) {
+        doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#15803d")
+           .text("CHANGE:", 8, y)
+           .text(change.toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
+        y += 10;
+      }
+      y += 5;
+
+      // Footer Section
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#000000").text("THANK YOU!", 8, y, { align: "center", width: 148 });
+      y += 10;
+
+      doc.font("Helvetica-Oblique").fontSize(6.5).fillColor("#475569").text("Visit Us Again!", 8, y, { align: "center", width: 148 });
+      y += 10;
+
+      doc.font("Helvetica").fontSize(5.5).fillColor("#94a3b8").text("Powered by ElectroFix", 8, y, { align: "center", width: 148 });
 
       doc.end();
     } catch (err) {
