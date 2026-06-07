@@ -30,7 +30,7 @@ export const getSummary = async (currentUser: any, startDateStr?: string, endDat
     periodSales,
     lowStockCount,
     activeRepairs,
-    notStartedRepairs,
+    pendingToDeliverRepairs,
     attendances
   ] = await Promise.all([
     prisma.customer.count(),
@@ -69,16 +69,14 @@ export const getSummary = async (currentUser: any, startDateStr?: string, endDat
       where: {
         ...repairWhere,
         status: {
-          in: ['work_in_progress', 'IN_PROGRESS', 'in_progress', 'WORK_IN_PROGRESS'],
+          in: [REPAIR_STATUS.NOT_STARTED, REPAIR_STATUS.WORK_IN_PROGRESS],
         },
       },
     }),
     prisma.repairJob.count({
       where: {
         ...repairWhere,
-        status: {
-          in: ['not_started', 'PENDING', 'pending', 'NOT_STARTED'],
-        },
+        status: REPAIR_STATUS.PENDING_TO_DELIVER,
       },
     }),
     prisma.attendance.findMany({
@@ -116,7 +114,7 @@ export const getSummary = async (currentUser: any, startDateStr?: string, endDat
     periodGross,
     lowStockCount,
     activeRepairs,
-    notStartedRepairs,
+    pendingToDeliverRepairs,
     totalProducts: await prisma.product.count(),
     completedToday: await prisma.repairJob.count({
       where: { 
@@ -144,7 +142,11 @@ export const getTechnicianWorkload = async () => {
 };
 
 export const getRecentRepairs = async (currentUser: any, limit: number = 5) => {
-  const where: any = {};
+  const where: any = {
+    status: {
+      in: [REPAIR_STATUS.NOT_STARTED, REPAIR_STATUS.WORK_IN_PROGRESS]
+    }
+  };
   if (currentUser?.role !== 'ADMIN') {
     where.technicianId = currentUser?.id;
   }
