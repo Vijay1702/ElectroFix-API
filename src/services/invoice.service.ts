@@ -192,7 +192,7 @@ export const deleteInvoice = async (id: string) => {
 };
 
 export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
-  let shopPhone = "9443631389";
+  let shopPhone = "8667264983";
   let shopEmail = "rameshvijay871@gmail.com";
   try {
     const settings = await prisma.setting.findMany();
@@ -209,8 +209,8 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
   }
 
   // Use values from settings if they are customized, otherwise default to mockup details
-  const displayPhone = (shopPhone && shopPhone !== "044-24556677" && shopPhone !== "8667264983") ? shopPhone : "8667264983";
-  const displayEmail = (shopEmail && shopEmail !== "contact@electrofix.in" && shopEmail !== "rameshvijay871@gmail.com") ? shopEmail : "rameshvijay871@gmail.com";
+  const displayPhone = (shopPhone && shopPhone !== "8667264983") ? shopPhone : "8667264983";
+  const displayEmail = (shopEmail && shopEmail !== "rameshvijay871@gmail.com") ? shopEmail : "rameshvijay871@gmail.com";
   const displayWebsite = "https://srisenthilelectrofixin.vercel.app/";
 
   return new Promise((resolve, reject) => {
@@ -227,7 +227,10 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       });
 
       // Base height for header, dividers, metadata block, totals, footer, and margins
-      const baseHeight = 288;
+      let baseHeight = 280;
+      if (Number(invoice.discount || 0) > 0) {
+        baseHeight += 18;
+      }
       const totalHeight = baseHeight + itemHeight;
 
       const doc = new PDFDocument({
@@ -262,11 +265,10 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
         .font("Helvetica-Bold")
         .text("SPARES & SERVICES", 6, y, { align: "center", width: 124 });
       y += 8;
-
       doc
         .fontSize(6.5)
         .font("Helvetica-Bold")
-        .text("Pattukkottai, Tamil Nadu 614601", 6, y, { align: "center", width: 124 });
+        .text("Pattukkottai", 6, y, { align: "center", width: 124 });
       y += 8;
 
       // Double line divider
@@ -327,10 +329,6 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc.text(customerStr, 72, rightY, { width: 58 });
       rightY += doc.heightOfString(customerStr, { width: 58 }) + 2;
 
-      if (invoice.customer?.phoneNumber) {
-        doc.text(`PHONE: ${invoice.customer.phoneNumber}`, 72, rightY, { width: 58 });
-        rightY += doc.heightOfString(`PHONE: ${invoice.customer.phoneNumber}`, { width: 58 }) + 2;
-      }
 
       const maxHeight = Math.max(leftY, rightY);
 
@@ -391,8 +389,21 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       // Summary
       doc.font("Helvetica").fontSize(6.5).fillColor("#0f172a");
 
+      const discVal = Number(invoice.discount || 0);
+      if (discVal > 0) {
+        doc.font("Helvetica-Bold").fontSize(7)
+          .text("SUBTOTAL", 6, y)
+          .text("Rs. " + Number(invoice.subtotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 70, y, { width: 60, align: "right" });
+        y += 9;
+
+        doc.font("Helvetica-Bold").fontSize(7).fillColor("#991b1b")
+          .text("DISCOUNT", 6, y)
+          .text("-Rs. " + discVal.toLocaleString("en-IN", { minimumFractionDigits: 2 }), 70, y, { width: 60, align: "right" });
+        y += 9;
+      }
+
       // Grand Total
-      doc.font("Helvetica-Bold").fontSize(7.5)
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#0f172a")
         .text("GRAND TOTAL", 6, y)
         .text("Rs. " + Number(invoice.grandTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 70, y, { width: 60, align: "right" });
       y += 10;
@@ -441,7 +452,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc.moveTo(2, 4).lineTo(6, 4).lineTo(7.5, 7).lineTo(0.5, 7).closePath().fillColor("#0f172a").fill();
       doc.restore();
 
-      doc.text(`P: ${displayPhone}`, 15, y);
+      doc.text(`${displayPhone}`, 15, y);
       y += 7;
 
       // 2. Email row: @ icon
@@ -471,7 +482,16 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       y += 10;
 
       doc.font("Helvetica-Oblique").fontSize(6.5).fillColor("#475569").text("Visit Us Again!", 6, y, { align: "center", width: 124 });
-      y += 9;
+      y += 12;
+
+      // Divider
+      doc
+        .moveTo(6, y)
+        .lineTo(130, y)
+        .lineWidth(0.5)
+        .strokeColor("#000000")
+        .stroke();
+      y += 6;
 
       doc.end();
     } catch (err) {

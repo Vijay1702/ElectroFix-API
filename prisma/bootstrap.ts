@@ -39,10 +39,10 @@ async function main() {
 
   // Core shop settings (GST, currency)
   const settings = [
-    { settingKey: "shop_name", settingValue: "ElectroFix" },
-    { settingKey: "shop_address", settingValue: "" },
-    { settingKey: "shop_phone", settingValue: "" },
-    { settingKey: "shop_email", settingValue: "" },
+    { settingKey: "shop_name", settingValue: "Sri Senthil Spares & Service" },
+    { settingKey: "shop_address", settingValue: "Pattukkottai" },
+    { settingKey: "shop_phone", settingValue: "+91 86672 64983" },
+    { settingKey: "shop_email", settingValue: "rameshvijay871@gmail.com" },
     { settingKey: "currency", settingValue: "INR" },
     { settingKey: "tax_percentage", settingValue: "18" },
   ];
@@ -50,7 +50,7 @@ async function main() {
   for (const s of settings) {
     await prisma.setting.upsert({
       where: { settingKey: s.settingKey },
-      update: {},
+      update: { settingValue: s.settingValue },
       create: s,
     });
   }

@@ -100,7 +100,7 @@ export const createRepairJob = async (payload: any, creatorId: string) => {
     await notificationService.createNotification(
       repair.technicianId,
       'New Repair Assignment',
-      `You have been assigned a new repair job: ${repair.jobNumber} (${repair.brand} ${repair.model})`,
+      `You have been assigned a new repair job: ${repair.jobNumber}${repair.brand || repair.model ? ` (${[repair.brand, repair.model].filter(Boolean).join(' ')})` : ''}`,
       'assignment'
     );
   }
@@ -162,7 +162,7 @@ export const updateRepairJob = async (id: string, payload: any, userId?: string)
     await notificationService.createNotification(
       updateData.technicianId,
       'New Repair Assignment',
-      `You have been assigned a new repair job: ${updatedRepair.jobNumber} (${updatedRepair.brand} ${updatedRepair.model})`,
+      `You have been assigned a new repair job: ${updatedRepair.jobNumber}${updatedRepair.brand || updatedRepair.model ? ` (${[updatedRepair.brand, updatedRepair.model].filter(Boolean).join(' ')})` : ''}`,
       'assignment'
     );
   }

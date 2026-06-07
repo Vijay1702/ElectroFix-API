@@ -58,8 +58,8 @@ async function main() {
   const defaultSettings = [
     { settingKey: "shop_name", settingValue: "ElectroFix Tamil Nadu" },
     { settingKey: "shop_address", settingValue: "No. 42, Anna Salai, Chennai, Tamil Nadu - 600002" },
-    { settingKey: "shop_phone", settingValue: "044-24556677" },
-    { settingKey: "shop_email", settingValue: "contact@electrofix.in" },
+    { settingKey: "shop_phone", settingValue: "+91 86672 64983" },
+    { settingKey: "shop_email", settingValue: "rameshvijay871@gmail.com" },
     { settingKey: "currency", settingValue: "INR" },
     { settingKey: "tax_percentage", settingValue: "18" }, // GST 18%
   ];
@@ -67,7 +67,7 @@ async function main() {
   for (const setting of defaultSettings) {
     await prisma.setting.upsert({
       where: { settingKey: setting.settingKey },
-      update: {},
+      update: { settingValue: setting.settingValue },
       create: setting,
     });
   }
@@ -132,7 +132,7 @@ async function main() {
   const catMotor = await getOrCreateCategory("Motor", "Water motors and pumps");
   const catIronBox = await getOrCreateCategory("Iron Box", "Dry and steam irons");
   const catCooker = await getOrCreateCategory("Cooker", "Induction cookers and pressure cookers");
-  
+
   // Products helper
   const getOrCreateProduct = async (data: any) => {
     const existing = await prisma.product.findUnique({ where: { productCode: data.productCode } });
