@@ -192,25 +192,47 @@ export const deleteInvoice = async (id: string) => {
 };
 
 export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
+  let shopPhone = "9443631389";
+  let shopEmail = "rameshvijay871@gmail.com";
+  try {
+    const settings = await prisma.setting.findMany();
+    const phoneSetting = settings.find((s: any) => s.settingKey === "shop_phone");
+    if (phoneSetting && phoneSetting.settingValue) {
+      shopPhone = phoneSetting.settingValue;
+    }
+    const emailSetting = settings.find((s: any) => s.settingKey === "shop_email");
+    if (emailSetting && emailSetting.settingValue) {
+      shopEmail = emailSetting.settingValue;
+    }
+  } catch (err) {
+    console.error("Failed to fetch shop settings:", err);
+  }
+
+  // Use values from settings if they are customized, otherwise default to mockup details
+  const displayPhone = (shopPhone && shopPhone !== "044-24556677" && shopPhone !== "8667264983") ? shopPhone : "8667264983";
+  const displayEmail = (shopEmail && shopEmail !== "contact@electrofix.in" && shopEmail !== "rameshvijay871@gmail.com") ? shopEmail : "rameshvijay871@gmail.com";
+  const displayWebsite = "https://srisenthilelectrofixin.vercel.app/";
+
   return new Promise((resolve, reject) => {
     try {
       const path = require("path");
       const fs = require("fs");
 
       const items = invoice.items || [];
-      // Estimate item heights dynamically based on character wrapping (approx 28 chars per line)
+      // Estimate item heights dynamically based on character wrapping (approx 24 chars per line for width 124)
       let itemHeight = 0;
       items.forEach((item: any) => {
-        const lines = Math.ceil((item.itemName || "").length / 28) || 1;
-        itemHeight += lines * 8 + 14;
+        const lines = Math.ceil((item.itemName || "").length / 24) || 1;
+        itemHeight += lines * 8 + 8 + 12; // name lines + qty/amount line + divider/padding
       });
 
-      // Base height for headers, metadata, summary box, and margins
-      const totalHeight = 140 + 8 + 35 + 15 + itemHeight + 8 + 70 + 40 + 20;
+      // Base height for header, dividers, metadata block, totals, footer, and margins
+      const baseHeight = 288;
+      const totalHeight = baseHeight + itemHeight;
 
       const doc = new PDFDocument({
-        size: [164, totalHeight],
-        margins: { top: 8, bottom: 8, left: 8, right: 8 },
+        size: [136, totalHeight], // 48mm width exactly
+        margins: { top: 6, bottom: 6, left: 6, right: 6 },
       });
 
       const buffers: Buffer[] = [];
@@ -218,195 +240,239 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc.on("end", () => resolve(Buffer.concat(buffers)));
       doc.on("error", reject);
 
-      // --- BRANDING & HEADER (58mm style) ---
-      let y = 8;
+      let y = 6;
 
-      // Load and render corporate logo (smaller for 58mm)
+      // Centered corporate logo
       const logoPath = path.join(process.cwd(), "src/assets/logo.png");
       if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, (164 - 30) / 2, y, { width: 30, height: 30 });
-        y += 33;
+        doc.image(logoPath, (136 - 20) / 2, y, { width: 20, height: 20 });
+        y += 24;
       }
 
+      // Business Branding
       doc
         .fillColor("#000000")
-        .fontSize(8)
+        .fontSize(9)
         .font("Helvetica-Bold")
-        .text("SRI SENTHIL SPARES AND SERVICES", 8, y, {
-          align: "center",
-        })
-        .text("Thalayari street, Pattukkottai - 614601", 8, y + 12, {
-          align: "center",
-        });
+        .text("SRI SENTHIL", 6, y, { align: "center", width: 124 });
+      y += 10;
 
-      y += 32;
-
-      // Divider
       doc
+        .fontSize(6.5)
         .font("Helvetica-Bold")
-        .fontSize(6)
-        .text(
-          "-------------------------------------------------------------------------",
-          8,
-          y,
-        );
+        .text("SPARES & SERVICES", 6, y, { align: "center", width: 124 });
       y += 8;
 
-      // Invoice Details
       doc
+        .fontSize(6.5)
         .font("Helvetica-Bold")
-        .fontSize(6)
-        .text("INVOICE", 4, y)
-        .font("Helvetica")
-        .text(": " + (invoice.invoiceNumber || "INV-000"), 45, y)
-        .font("Helvetica-Bold")
-        .text("DATE", 4, y + 8)
-        .font("Helvetica")
-        .text(
-          ": " + new Date(invoice.invoiceDate).toLocaleDateString("en-IN"),
-          45,
-          y + 8,
-        )
-        .font("Helvetica-Bold")
-        .text("CUST NAME", 4, y + 16)
-        .font("Helvetica")
-        .text(": " + invoice.customer?.fullName, 45, y + 16, {
-          width: 111,
-          height: 8,
-        })
-        .font("Helvetica-Bold")
-        .text("PHONE NO", 4, y + 24)
-        .font("Helvetica")
-        .text(": " + invoice.customer?.phoneNumber, 45, y + 24);
+        .text("Pattukkottai, Tamil Nadu 614601", 6, y, { align: "center", width: 124 });
+      y += 8;
 
-      y += 33;
+      // Double line divider
+      doc
+        .moveTo(6, y)
+        .lineTo(130, y)
+        .lineWidth(0.8)
+        .strokeColor("#000000")
+        .stroke();
+      doc
+        .moveTo(6, y + 2)
+        .lineTo(130, y + 2)
+        .lineWidth(0.8)
+        .strokeColor("#000000")
+        .stroke();
+      y += 6;
 
-      // Table Header
+      // RECEIPT Title
       doc
         .fillColor("#000000")
+        .fontSize(8.5)
         .font("Helvetica-Bold")
-        .fontSize(6)
-        .text("ITEM", 8, y)
-        .text("QTY", 92, y, { width: 15, align: "right" })
-        .text("PRICE (INR)", 112, y, { width: 44, align: "right" });
+        .text("RECEIPT", 6, y, { align: "center", width: 124 });
+      y += 10;
 
-      y += 9;
-      doc
-        .font("Helvetica")
-        .text(
-          "-------------------------------------------------------------------------",
-          8,
-          y,
-        );
-      y += 8;
-
-      // Table Items
-      items.forEach((item: any) => {
-        const name = item.itemName || "Item";
-        const qty = item.quantity || 1;
-        const price = Number(item.unitPrice || 0);
-        const total = Number(item.totalPrice || 0);
-
-        doc.font("Helvetica-Bold").fontSize(6).text(name, 8, y, { width: 148 });
-
-        // Dynamically shift Y by text height
-        y += doc.heightOfString(name, { width: 148 }) + 2;
-
-        doc
-          .font("Helvetica")
-          .fontSize(6)
-          .text(`  ${qty} x ${price.toFixed(1)}`, 8, y)
-          .text(
-            total.toLocaleString("en-IN", {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            }),
-            112,
-            y,
-            { width: 44, align: "right" },
-          );
-
-        y += 10;
+      // Date & Time formatting
+      const invDate = new Date(invoice.invoiceDate || new Date());
+      const dateStr = invDate.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).toUpperCase();
+      const timeStr = invDate.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
       });
 
+      const customerName = (invoice.customer?.fullName || "Guest").toUpperCase();
+
+      // Split metadata block - dynamic layout to prevent overlaps
+      const metaY = y;
+      doc.font("Helvetica").fontSize(6).fillColor("#1e293b");
+
+      // Left column
+      let leftY = metaY;
+      doc.text(`DATE: ${dateStr}`, 6, leftY, { width: 58 });
+      leftY += doc.heightOfString(`DATE: ${dateStr}`, { width: 58 }) + 2;
+      doc.text(`TIME: ${timeStr}`, 6, leftY, { width: 58 });
+      leftY += doc.heightOfString(`TIME: ${timeStr}`, { width: 58 }) + 2;
+
+      // Right column
+      let rightY = metaY;
+      doc.text(`INVOICE: #${invoice.invoiceNumber || "INV-000"}`, 72, rightY, { width: 58 });
+      rightY += doc.heightOfString(`INVOICE: #${invoice.invoiceNumber || "INV-000"}`, { width: 58 }) + 2;
+
+      const customerStr = `CUSTOMER: ${customerName}`;
+      doc.text(customerStr, 72, rightY, { width: 58 });
+      rightY += doc.heightOfString(customerStr, { width: 58 }) + 2;
+
+      if (invoice.customer?.phoneNumber) {
+        doc.text(`PHONE: ${invoice.customer.phoneNumber}`, 72, rightY, { width: 58 });
+        rightY += doc.heightOfString(`PHONE: ${invoice.customer.phoneNumber}`, { width: 58 }) + 2;
+      }
+
+      const maxHeight = Math.max(leftY, rightY);
+
+      // Vertical line divider at X = 68
+      doc
+        .moveTo(68, metaY - 2)
+        .lineTo(68, maxHeight - 2)
+        .lineWidth(0.5)
+        .strokeColor("#94a3b8")
+        .stroke();
+
+      y = maxHeight + 4;
+
       // Divider
       doc
-        .font("Helvetica-Bold")
-        .text("-------------------------------------------------------------------------", 8, y);
-      y += 8;
+        .moveTo(6, y)
+        .lineTo(130, y)
+        .lineWidth(0.5)
+        .strokeColor("#000000")
+        .stroke();
+      y += 6;
+
+      // Table Items (Single column format)
+      items.forEach((item: any, i: number) => {
+        const name = item.itemName || "Item";
+        const qty = item.quantity || 1;
+        const total = Number(item.totalPrice || 0);
+
+        doc.font("Helvetica-Bold").fontSize(7).fillColor("#0f172a").text(name, 6, y, { width: 124 });
+        y += doc.heightOfString(name, { width: 124 }) + 2;
+
+        doc.font("Helvetica").fontSize(6).fillColor("#475569")
+          .text(`QTY: ${qty}, AMOUNT: ${total.toFixed(1)}`, 6, y);
+        y += 9;
+
+        // Draw solid separator line between items (except the last one)
+        if (i < items.length - 1) {
+          doc
+            .moveTo(6, y)
+            .lineTo(130, y)
+            .lineWidth(0.3)
+            .strokeColor("#cbd5e1")
+            .stroke();
+          y += 5;
+        }
+      });
+
+      y += 2;
+      // Solid divider line below items
+      doc
+        .moveTo(6, y)
+        .lineTo(130, y)
+        .lineWidth(0.5)
+        .strokeColor("#000000")
+        .stroke();
+      y += 5;
 
       // Summary
-      doc
-        .fontSize(6)
-        .font("Helvetica-Bold")
-        .text("SUBTOTAL:", 45, y, { width: 45, align: "right" })
-        .font("Helvetica")
-        .text(
-          Number(invoice.subtotal || 0).toLocaleString("en-IN", {
-            minimumFractionDigits: 2,
-          }),
-          100,
-          y,
-          { width: 56, align: "right" },
-        )
+      doc.font("Helvetica").fontSize(6.5).fillColor("#0f172a");
 
-        .font("Helvetica-Bold")
-        .text("PAID:", 45, y + 8, { width: 45, align: "right" })
-        .font("Helvetica")
-        .text(
-          Number(invoice.paidAmount || 0).toLocaleString("en-IN", {
-            minimumFractionDigits: 2,
-          }),
-          100,
-          y + 8,
-          { width: 56, align: "right" },
-        )
+      // Grand Total
+      doc.font("Helvetica-Bold").fontSize(7.5)
+        .text("GRAND TOTAL", 6, y)
+        .text("Rs. " + Number(invoice.grandTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 70, y, { width: 60, align: "right" });
+      y += 10;
 
-        .font("Helvetica-Bold")
-        .text("BALANCE:", 45, y + 16, { width: 45, align: "right" })
-        .font("Helvetica")
-        .text(
-          Number(invoice.pendingAmount || 0).toLocaleString("en-IN", {
-            minimumFractionDigits: 2,
-          }),
-          100,
-          y + 16,
-          { width: 56, align: "right" },
-        );
+      // Paid
+      doc.font("Helvetica-Bold").fontSize(7.5)
+        .text("PAID:", 6, y)
+        .text("Rs. " + Number(invoice.paidAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 70, y, { width: 60, align: "right" });
+      y += 10;
 
-      y += 26;
+      // Balance
+      const balance = Number(invoice.pendingAmount || 0);
+      if (balance > 0) {
+        doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#991b1b")
+          .text("BALANCE:", 6, y)
+          .text("Rs. " + balance.toLocaleString("en-IN", { minimumFractionDigits: 2 }), 70, y, { width: 60, align: "right" });
+        y += 10;
+      }
+      y += 4;
 
-      // Grand Total Highlight box
-      doc.rect(8, y, 148, 18).fill("#f1f5f9");
-      doc
-        .fillColor("#000000")
-        .font("Helvetica-Bold")
-        .fontSize(7)
-        .text(
-          "TO BE PAID: INR " +
-            Number(invoice.pendingAmount || 0).toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-            }),
-          12,
-          y + 5,
-          { align: "center", width: 140 },
-        );
+      // Gear pattern separator
+      const drawGearPattern = (yPos: number) => {
+        for (let x = 10; x <= 126; x += 8) {
+          doc.circle(x, yPos, 1.4).fillColor("#cbd5e1").fill();
+          for (let a = 0; a < 360; a += 60) {
+            const rad = (a * Math.PI) / 180;
+            const tx = x + Math.cos(rad) * 1.8;
+            const ty = yPos + Math.sin(rad) * 1.8;
+            doc.circle(tx, ty, 0.4).fillColor("#cbd5e1").fill();
+          }
+          doc.circle(x, yPos, 0.5).fillColor("#ffffff").fill();
+        }
+      };
 
-      y += 24;
+      drawGearPattern(y);
+      y += 8;
 
-      // Footer
-      doc
-        .font("Helvetica")
-        .fontSize(5)
-        .fillColor("#64748b")
-        .text("Thank you! Visit again.", 8, y, {
-          align: "center",
-          width: 148,
-        })
-        .text("Powered by ElectroFix", 8, y + 8, {
-          align: "center",
-          width: 148,
-        });
+      // Contact block with vector icons
+      doc.fontSize(5.5).font("Helvetica").fillColor("#334155");
+
+      // 1. Phone row: retro telephone icon
+      doc.save();
+      doc.translate(6, y - 1);
+      doc.scale(0.85);
+      doc.moveTo(1, 2).bezierCurveTo(3, 0, 5, 0, 7, 2).lineTo(6.5, 3.5).bezierCurveTo(5, 2.5, 3, 2.5, 1.5, 3.5).closePath().fillColor("#0f172a").fill();
+      doc.moveTo(2, 4).lineTo(6, 4).lineTo(7.5, 7).lineTo(0.5, 7).closePath().fillColor("#0f172a").fill();
+      doc.restore();
+
+      doc.text(`P: ${displayPhone}`, 15, y);
+      y += 7;
+
+      // 2. Email row: @ icon
+      doc.font("Helvetica-Bold").fontSize(6.5).text("@", 6, y - 0.5);
+      doc.font("Helvetica").fontSize(5.5).text(displayEmail, 15, y);
+      y += 7;
+
+      // 3. Globe row: vector globe icon
+      doc.save();
+      doc.translate(6, y);
+      doc.scale(0.85);
+      doc.circle(3, 3, 3.2).strokeColor("#0f172a").lineWidth(0.5).stroke();
+      doc.moveTo(-0.2, 3).lineTo(6.2, 3).stroke();
+      doc.moveTo(3, -0.2).lineTo(3, 6.2).stroke();
+      doc.ellipse(3, 3, 1.5, 3.2).stroke();
+      doc.restore();
+
+      doc.text(displayWebsite, 15, y);
+      y += 10;
+
+      // Gear pattern separator below contacts
+      drawGearPattern(y);
+      y += 8;
+
+      // Footer Section
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text("THANK YOU!", 6, y, { align: "center", width: 124 });
+      y += 10;
+
+      doc.font("Helvetica-Oblique").fontSize(6.5).fillColor("#475569").text("Visit Us Again!", 6, y, { align: "center", width: 124 });
+      y += 9;
+
       doc.end();
     } catch (err) {
       reject(err);
