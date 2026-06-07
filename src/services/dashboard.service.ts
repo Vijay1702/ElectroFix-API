@@ -1,9 +1,20 @@
 import prisma from '../config/prisma.config';
 import { REPAIR_STATUS } from '../constants/repair-status.constants';
 
-export const getSummary = async (currentUser: any) => {
+export const getSummary = async (currentUser: any, startDateStr?: string, endDateStr?: string) => {
   const now = new Date();
-  const firstDayOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  let start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  let end = now;
+
+  if (startDateStr) {
+    start = new Date(startDateStr);
+    start.setHours(0, 0, 0, 0);
+  }
+  
+  if (endDateStr) {
+    end = new Date(endDateStr);
+    end.setHours(23, 59, 59, 999);
+  }
 
   const repairWhere: any = {};
   if (currentUser?.role !== 'ADMIN') {
@@ -16,7 +27,7 @@ export const getSummary = async (currentUser: any) => {
     pendingRepairs,
     completedRepairs,
     totalSales,
-    monthlySales,
+    periodSales,
     lowStockCount,
     activeRepairs,
     notStartedRepairs,
@@ -44,7 +55,7 @@ export const getSummary = async (currentUser: any) => {
       _sum: { grandTotal: true },
     }),
     prisma.invoice.aggregate({
-      where: { createdAt: { gte: firstDayOfMonth } },
+      where: { createdAt: { gte: start, lte: end } },
       _sum: { grandTotal: true },
     }),
     prisma.product.count({
@@ -73,7 +84,8 @@ export const getSummary = async (currentUser: any) => {
     prisma.attendance.findMany({
       where: {
         attendanceDate: {
-          gte: firstDayOfMonth,
+          gte: start,
+          lte: end,
         },
         status: 'Present',
       },
@@ -91,8 +103,8 @@ export const getSummary = async (currentUser: any) => {
     return acc + (Number(curr.employee?.perDaySalary) || 0);
   }, 0);
 
-  const monthlyGross = Number(monthlySales._sum.grandTotal || 0);
-  const monthlyRevenue = monthlyGross - totalSalaries;
+  const periodGross = Number(periodSales._sum.grandTotal || 0);
+  const periodRevenue = periodGross - totalSalaries;
 
   return {
     totalCustomers,
@@ -100,8 +112,8 @@ export const getSummary = async (currentUser: any) => {
     pendingRepairs,
     completedRepairs,
     totalSales: totalSales._sum.grandTotal || 0,
-    monthlyRevenue,
-    monthlyGross,
+    periodRevenue,
+    periodGross,
     lowStockCount,
     activeRepairs,
     notStartedRepairs,

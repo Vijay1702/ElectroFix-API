@@ -49,7 +49,7 @@ model Customer {
 
   customerCode  String   @unique
   fullName      String
-  phoneNumber   String
+  phoneNumber   String   @unique
   address       String?
   notes         String?
 

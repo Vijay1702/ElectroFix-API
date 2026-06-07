@@ -1,11 +1,14 @@
-import * as invoiceRepository from '../repositories/invoice.repository';
-import { MESSAGES } from '../constants/messages.constants';
-import { PAYMENT_STATUS } from '../constants/payment-status.constants';
-import { generateInvoiceNumber } from '../utils/generate-code';
-import PDFDocument = require('pdfkit');
-import prisma from '../config/prisma.config';
+import * as invoiceRepository from "../repositories/invoice.repository";
+import { MESSAGES } from "../constants/messages.constants";
+import { PAYMENT_STATUS } from "../constants/payment-status.constants";
+import { generateInvoiceNumber } from "../utils/generate-code";
+import PDFDocument = require("pdfkit");
+import prisma from "../config/prisma.config";
 
-export const getInvoices = async (pagination: any, filters: { search?: string, status?: string }) => {
+export const getInvoices = async (
+  pagination: any,
+  filters: { search?: string; status?: string },
+) => {
   const { skip, limit, all } = pagination;
   const { search, status } = filters;
 
@@ -17,15 +20,15 @@ export const getInvoices = async (pagination: any, filters: { search?: string, s
 
   if (search) {
     where.OR = [
-      { invoiceNumber: { contains: search, mode: 'insensitive' } },
-      { customer: { fullName: { contains: search, mode: 'insensitive' } } },
-      { customer: { phoneNumber: { contains: search, mode: 'insensitive' } } },
+      { invoiceNumber: { contains: search, mode: "insensitive" } },
+      { customer: { fullName: { contains: search, mode: "insensitive" } } },
+      { customer: { phoneNumber: { contains: search, mode: "insensitive" } } },
     ];
   }
 
   const invoices = await invoiceRepository.list({
     ...(all ? {} : { skip, take: limit }),
-    where
+    where,
   });
   const total = await invoiceRepository.count(where);
 
@@ -44,10 +47,10 @@ export const getInvoiceById = async (id: string) => {
 
 export const createInvoice = async (payload: any, userId: string) => {
   const invoiceNumber = await generateInvoiceNumber();
-  
+
   const { paidAmount = 0, grandTotal, invoiceDate, ...rest } = payload;
   const pendingAmount = grandTotal - paidAmount;
-  
+
   let paymentStatus: string = PAYMENT_STATUS.PENDING;
   if (pendingAmount <= 0) {
     paymentStatus = PAYMENT_STATUS.PAID;
@@ -69,16 +72,17 @@ export const createInvoice = async (payload: any, userId: string) => {
   if (paymentStatus === PAYMENT_STATUS.PAID && payload.repairJobId) {
     await prisma.repairJob.update({
       where: { id: payload.repairJobId },
-      data: { status: 'delivered' },
+      data: { status: "delivered" },
     });
-    
+
     await prisma.repairStatusHistory.create({
       data: {
         repairJob: { connect: { id: payload.repairJobId } },
-        oldStatus: 'pending_to_deliver',
-        newStatus: 'delivered',
+        oldStatus: "pending_to_deliver",
+        newStatus: "delivered",
         user: { connect: { id: userId } },
-        notes: 'Status updated to delivered automatically as invoice payment completed in full.',
+        notes:
+          "Status updated to delivered automatically as invoice payment completed in full.",
       },
     });
   }
@@ -86,33 +90,33 @@ export const createInvoice = async (payload: any, userId: string) => {
   // Reduce product stock and create stock movements for each product item
   if (invoice.items && invoice.items.length > 0) {
     for (const item of invoice.items) {
-      if (item.itemType === 'PRODUCT' && item.productId) {
+      if (item.itemType === "PRODUCT" && item.productId) {
         const product = await prisma.product.findUnique({
-          where: { id: item.productId }
+          where: { id: item.productId },
         });
-        
+
         if (product) {
           const previousStock = product.stockQuantity;
           const currentStock = Math.max(0, previousStock - item.quantity);
-          
+
           // Update product stock
           await prisma.product.update({
             where: { id: item.productId },
-            data: { stockQuantity: currentStock }
+            data: { stockQuantity: currentStock },
           });
-          
+
           // Log stock movement
           await prisma.stockMovement.create({
             data: {
               product: { connect: { id: item.productId } },
-              movementType: 'OUT',
+              movementType: "OUT",
               quantity: item.quantity,
               previousStock,
               currentStock,
-              referenceType: 'INVOICE',
+              referenceType: "INVOICE",
               referenceId: invoice.id,
-              user: { connect: { id: userId } }
-            }
+              user: { connect: { id: userId } },
+            },
           });
         }
       }
@@ -144,28 +148,32 @@ export const updateInvoice = async (id: string, payload: any) => {
 
   const updatedInvoice = await invoiceRepository.update(id, payload);
 
-  if (updatedInvoice.paymentStatus === PAYMENT_STATUS.PAID && updatedInvoice.repairJobId) {
+  if (
+    updatedInvoice.paymentStatus === PAYMENT_STATUS.PAID &&
+    updatedInvoice.repairJobId
+  ) {
     await prisma.repairJob.update({
       where: { id: updatedInvoice.repairJobId },
-      data: { status: 'delivered' },
+      data: { status: "delivered" },
     });
 
     const existingHistory = await prisma.repairStatusHistory.findFirst({
       where: {
         repairJobId: updatedInvoice.repairJobId,
-        newStatus: 'delivered',
+        newStatus: "delivered",
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     if (!existingHistory) {
       await prisma.repairStatusHistory.create({
         data: {
           repairJob: { connect: { id: updatedInvoice.repairJobId } },
-          oldStatus: 'pending_to_deliver',
-          newStatus: 'delivered',
+          oldStatus: "pending_to_deliver",
+          newStatus: "delivered",
           user: { connect: { id: updatedInvoice.createdBy } },
-          notes: 'Status updated to delivered automatically as invoice payment completed in full.',
+          notes:
+            "Status updated to delivered automatically as invoice payment completed in full.",
         },
       });
     }

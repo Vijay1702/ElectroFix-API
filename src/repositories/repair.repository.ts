@@ -15,7 +15,7 @@ export const findById = async (id: string): Promise<any | null> => {
         },
         orderBy: { createdAt: 'desc' },
       },
-      invoices: true,
+      invoices: { include: { items: true } },
     },
   });
 };
@@ -39,7 +39,7 @@ export const list = async (params: { skip?: number; take?: number; where?: Prism
     include: {
       customer: true,
       technician: { select: { id: true, fullName: true } },
-      invoices: true,
+      invoices: { include: { items: true } },
     },
     orderBy: { createdAt: 'desc' },
   });

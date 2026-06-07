@@ -34,8 +34,22 @@ export const count = async (where?: Prisma.ProductWhereInput): Promise<number> =
 };
 
 export const remove = async (id: string): Promise<Product> => {
-  return prisma.product.delete({
-    where: { id },
+  return prisma.$transaction(async (tx) => {
+    // Check if the product has been billed in any invoices
+    const invoiceCount = await tx.invoiceItem.count({ where: { productId: id } });
+    if (invoiceCount > 0) {
+      throw { statusCode: 400, message: "Cannot delete product. It has already been billed in one or more invoices." };
+    }
+
+    // Safely delete associated stock movements first
+    await tx.stockMovement.deleteMany({
+      where: { productId: id },
+    });
+
+    // Delete the product
+    return tx.product.delete({
+      where: { id },
+    });
   });
 };
 
