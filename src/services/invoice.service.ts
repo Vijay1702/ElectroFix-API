@@ -192,17 +192,38 @@ export const deleteInvoice = async (id: string) => {
 };
 
 export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
+  let shopPhone = "9443631389";
+  let shopEmail = "rameshvijay871@gmail.com";
+  try {
+    const settings = await prisma.setting.findMany();
+    const phoneSetting = settings.find((s: any) => s.settingKey === "shop_phone");
+    if (phoneSetting && phoneSetting.settingValue) {
+      shopPhone = phoneSetting.settingValue;
+    }
+    const emailSetting = settings.find((s: any) => s.settingKey === "shop_email");
+    if (emailSetting && emailSetting.settingValue) {
+      shopEmail = emailSetting.settingValue;
+    }
+  } catch (err) {
+    console.error("Failed to fetch shop settings:", err);
+  }
+
+  // Use values from settings if they are customized, otherwise default to mockup details
+  const displayPhone = (shopPhone && shopPhone !== "9443631389") ? shopPhone : "9443631389";
+  const displayEmail = (shopEmail && shopEmail !== "rameshvijay871@gmail.com") ? shopEmail : "rameshvijay871@gmail.com";
+  const displayWebsite = "https://srisenthilelectrofixin.vercel.app/";
+
   return new Promise((resolve, reject) => {
     try {
       const path = require("path");
       const fs = require("fs");
 
       const items = invoice.items || [];
-      // Estimate item heights dynamically based on character wrapping (approx 20 chars per line for width 74)
+      // Estimate item heights dynamically based on character wrapping (approx 24 chars per line for width 124)
       let itemHeight = 0;
       items.forEach((item: any) => {
-        const lines = Math.ceil((item.itemName || "").length / 20) || 1;
-        itemHeight += lines * 8 + 12;
+        const lines = Math.ceil((item.itemName || "").length / 24) || 1;
+        itemHeight += lines * 8 + 8 + 12; // name lines + qty/amount line + divider/padding
       });
 
       // Base height for header, dividers, metadata block, totals, footer, and margins
@@ -210,8 +231,8 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       const totalHeight = baseHeight + itemHeight;
 
       const doc = new PDFDocument({
-        size: [164, totalHeight],
-        margins: { top: 8, bottom: 8, left: 8, right: 8 },
+        size: [136, totalHeight], // 48mm width exactly
+        margins: { top: 6, bottom: 6, left: 6, right: 6 },
       });
 
       const buffers: Buffer[] = [];
@@ -219,13 +240,13 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc.on("end", () => resolve(Buffer.concat(buffers)));
       doc.on("error", reject);
 
-      let y = 8;
+      let y = 6;
 
       // Centered corporate logo
       const logoPath = path.join(process.cwd(), "src/assets/logo.png");
       if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, (164 - 24) / 2, y, { width: 24, height: 24 });
-        y += 28;
+        doc.image(logoPath, (136 - 20) / 2, y, { width: 20, height: 20 });
+        y += 24;
       }
 
       // Business Branding
@@ -233,38 +254,37 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
         .fillColor("#000000")
         .fontSize(9)
         .font("Helvetica-Bold")
-        .text("SRI SENTHIL", 8, y, { align: "center", width: 148 });
-      y += 11;
+        .text("SRI SENTHIL", 6, y, { align: "center", width: 124 });
+      y += 10;
 
       doc
         .fontSize(6.5)
         .font("Helvetica-Bold")
-        .text("SPARES & SERVICES", 8, y, { align: "center", width: 148 });
-      y += 9;
+        .text("SPARES & SERVICES", 6, y, { align: "center", width: 124 });
+      y += 8;
 
+      // Double line divider
       doc
-        .fontSize(6)
-        .font("Helvetica")
-        .fillColor("#334155")
-        .text("Thalayari street, Pattukkottai - 614601", 8, y, { align: "center", width: 148 });
-      y += 12;
-
-      // Divider
-      doc
-        .moveTo(8, y)
-        .lineTo(156, y)
-        .lineWidth(0.5)
+        .moveTo(6, y)
+        .lineTo(130, y)
+        .lineWidth(0.8)
         .strokeColor("#000000")
         .stroke();
-      y += 5;
+      doc
+        .moveTo(6, y + 2)
+        .lineTo(130, y + 2)
+        .lineWidth(0.8)
+        .strokeColor("#000000")
+        .stroke();
+      y += 6;
 
       // RECEIPT Title
       doc
         .fillColor("#000000")
         .fontSize(8.5)
         .font("Helvetica-Bold")
-        .text("RECEIPT", 8, y, { align: "center", width: 148 });
-      y += 11;
+        .text("RECEIPT", 6, y, { align: "center", width: 124 });
+      y += 10;
 
       // Date & Time formatting
       const invDate = new Date(invoice.invoiceDate || new Date());
@@ -280,172 +300,172 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       });
 
       const customerName = (invoice.customer?.fullName || "Guest").toUpperCase();
-      const customerPhone = invoice.customer?.phoneNumber || "";
 
-      // Metadata block (Date, Time, Invoice No., Customer details)
-      doc.font("Helvetica").fontSize(6.5).fillColor("#1e293b");
-      
-      doc.text(`DATE: ${dateStr} | TIME: ${timeStr}`, 8, y, { align: "center", width: 148 });
-      y += 8;
-      
-      doc.text(`TICKET: #${invoice.invoiceNumber || "INV-000"}`, 8, y, { align: "center", width: 148 });
-      y += 8;
+      // Split metadata block - dynamic layout to prevent overlaps
+      const metaY = y;
+      doc.font("Helvetica").fontSize(6).fillColor("#1e293b");
 
-      doc.text(`CUSTOMER: ${customerName}`, 8, y, { align: "center", width: 148 });
-      y += 8;
+      // Left column
+      let leftY = metaY;
+      doc.text(`DATE: ${dateStr}`, 6, leftY, { width: 58 });
+      leftY += doc.heightOfString(`DATE: ${dateStr}`, { width: 58 }) + 2;
+      doc.text(`TIME: ${timeStr}`, 6, leftY, { width: 58 });
+      leftY += doc.heightOfString(`TIME: ${timeStr}`, { width: 58 }) + 2;
 
-      if (customerPhone) {
-        doc.text(`PHONE: ${customerPhone}`, 8, y, { align: "center", width: 148 });
-        y += 8;
+      // Right column
+      let rightY = metaY;
+      doc.text(`INVOICE: #${invoice.invoiceNumber || "INV-000"}`, 72, rightY, { width: 58 });
+      rightY += doc.heightOfString(`INVOICE: #${invoice.invoiceNumber || "INV-000"}`, { width: 58 }) + 2;
+
+      const customerStr = `CUSTOMER: ${customerName}`;
+      doc.text(customerStr, 72, rightY, { width: 58 });
+      rightY += doc.heightOfString(customerStr, { width: 58 }) + 2;
+
+      if (invoice.customer?.phoneNumber) {
+        doc.text(`PHONE: ${invoice.customer.phoneNumber}`, 72, rightY, { width: 58 });
+        rightY += doc.heightOfString(`PHONE: ${invoice.customer.phoneNumber}`, { width: 58 }) + 2;
       }
-      y += 3;
+
+      const maxHeight = Math.max(leftY, rightY);
+
+      // Vertical line divider at X = 68
+      doc
+        .moveTo(68, metaY - 2)
+        .lineTo(68, maxHeight - 2)
+        .lineWidth(0.5)
+        .strokeColor("#94a3b8")
+        .stroke();
+
+      y = maxHeight + 4;
 
       // Divider
       doc
-        .moveTo(8, y)
-        .lineTo(156, y)
+        .moveTo(6, y)
+        .lineTo(130, y)
         .lineWidth(0.5)
         .strokeColor("#000000")
         .stroke();
-      y += 4;
+      y += 6;
 
-      // Table Header
-      doc.font("Helvetica-Bold").fontSize(6).fillColor("#000000");
-      doc.text("ITEM", 8, y);
-      doc.text("QTY", 82, y, { width: 18, align: "center" });
-      doc.text("PRICE", 100, y, { width: 26, align: "right" });
-      doc.text("TOTAL", 126, y, { width: 30, align: "right" });
-      y += 8;
-
-      // Divider below headers
-      doc
-        .moveTo(8, y)
-        .lineTo(156, y)
-        .lineWidth(0.5)
-        .strokeColor("#000000")
-        .stroke();
-      y += 5;
-
-      // Table Items
-      items.forEach((item: any) => {
+      // Table Items (Single column format)
+      items.forEach((item: any, i: number) => {
         const name = item.itemName || "Item";
         const qty = item.quantity || 1;
-        const price = Number(item.unitPrice || 0);
         const total = Number(item.totalPrice || 0);
 
-        const startY = y;
-        doc.font("Helvetica-Bold").fontSize(6).fillColor("#000000").text(name, 8, startY, { width: 74 });
-        const textHeight = doc.heightOfString(name, { width: 74 });
+        doc.font("Helvetica-Bold").fontSize(7).fillColor("#0f172a").text(name, 6, y, { width: 124 });
+        y += doc.heightOfString(name, { width: 124 }) + 2;
 
-        doc.font("Helvetica")
-          .fontSize(6)
-          .fillColor("#000000")
-          .text(qty.toString(), 82, startY, { width: 18, align: "center" })
-          .text(price.toFixed(1), 100, startY, { width: 26, align: "right" })
-          .text(total.toFixed(1), 126, startY, { width: 30, align: "right" });
+        doc.font("Helvetica").fontSize(6).fillColor("#475569")
+          .text(`QTY: ${qty}, AMOUNT: ${total.toFixed(1)}`, 6, y);
+        y += 9;
 
-        y = startY + Math.max(textHeight, 8) + 5;
+        // Draw solid separator line between items (except the last one)
+        if (i < items.length - 1) {
+          doc
+            .moveTo(6, y)
+            .lineTo(130, y)
+            .lineWidth(0.3)
+            .strokeColor("#cbd5e1")
+            .stroke();
+          y += 5;
+        }
       });
 
-      // Divider below items
+      y += 2;
+      // Solid divider line below items
       doc
-        .moveTo(8, y)
-        .lineTo(156, y)
+        .moveTo(6, y)
+        .lineTo(130, y)
         .lineWidth(0.5)
         .strokeColor("#000000")
         .stroke();
       y += 5;
 
       // Summary
-      doc.font("Helvetica").fontSize(6).fillColor("#1e293b");
+      doc.font("Helvetica").fontSize(6.5).fillColor("#0f172a");
 
-      // Subtotal
-      doc.text("Subtotal:", 8, y)
-         .text(Number(invoice.subtotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
-      y += 8;
+      // Grand Total
+      doc.font("Helvetica-Bold").fontSize(7.5)
+        .text("GRAND TOTAL", 6, y)
+        .text("Rs. " + Number(invoice.grandTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 70, y, { width: 60, align: "right" });
+      y += 10;
 
-      // Taxes
-      if (Number(invoice.tax || 0) > 0) {
-        doc.text("Taxes:", 8, y)
-           .text(Number(invoice.tax).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
-        y += 8;
+      // Paid
+      doc.font("Helvetica-Bold").fontSize(7.5)
+        .text("PAID:", 6, y)
+        .text("Rs. " + Number(invoice.paidAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 70, y, { width: 60, align: "right" });
+      y += 10;
+
+      // Balance
+      const balance = Number(invoice.pendingAmount || 0);
+      if (balance > 0) {
+        doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#991b1b")
+          .text("BALANCE:", 6, y)
+          .text("Rs. " + balance.toLocaleString("en-IN", { minimumFractionDigits: 2 }), 70, y, { width: 60, align: "right" });
+        y += 10;
       }
-
-      // Discount
-      if (Number(invoice.discount || 0) > 0) {
-        doc.text("Discount:", 8, y)
-           .text("-" + Number(invoice.discount).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
-        y += 8;
-      }
-
-      // Divider before Grand Total
-      doc
-        .moveTo(8, y)
-        .lineTo(156, y)
-        .lineWidth(0.5)
-        .strokeColor("#000000")
-        .stroke();
       y += 4;
 
-      // Grand Total Row
-      doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#000000")
-         .text("GRAND TOTAL", 8, y)
-         .text("Rs. " + Number(invoice.grandTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
-      y += 10;
-
-      // Divider after Grand Total
-      doc
-        .moveTo(8, y)
-        .lineTo(156, y)
-        .lineWidth(0.5)
-        .strokeColor("#000000")
-        .stroke();
-      y += 5;
-
-      // Parse Payment Method from notes
-      let paymentMethod = "CASH";
-      if (invoice.notes) {
-        if (invoice.notes.includes("Payment Method: QR")) {
-          paymentMethod = "QR";
-        } else if (invoice.notes.includes("Payment Method: CASH")) {
-          paymentMethod = "CASH";
+      // Gear pattern separator
+      const drawGearPattern = (yPos: number) => {
+        for (let x = 10; x <= 126; x += 8) {
+          doc.circle(x, yPos, 1.4).fillColor("#cbd5e1").fill();
+          for (let a = 0; a < 360; a += 60) {
+            const rad = (a * Math.PI) / 180;
+            const tx = x + Math.cos(rad) * 1.8;
+            const ty = yPos + Math.sin(rad) * 1.8;
+            doc.circle(tx, ty, 0.4).fillColor("#cbd5e1").fill();
+          }
+          doc.circle(x, yPos, 0.5).fillColor("#ffffff").fill();
         }
-      }
+      };
 
-      // Paid Amount
-      const paymentSuffix = paymentMethod ? ` (${paymentMethod})` : "";
-      doc.font("Helvetica").fontSize(6).fillColor("#1e293b")
-         .text(`PAID${paymentSuffix}:`, 8, y)
-         .text(Number(invoice.paidAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
+      drawGearPattern(y);
       y += 8;
 
-      // Balance Due or Change
-      const grandTotal = Number(invoice.grandTotal || 0);
-      const paid = Number(invoice.paidAmount || 0);
-      const balance = Number(invoice.pendingAmount || 0);
-      const change = Math.max(0, paid - grandTotal);
+      // Contact block with vector icons
+      doc.fontSize(5.5).font("Helvetica").fillColor("#334155");
 
-      if (balance > 0) {
-        doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#991b1b")
-           .text("BALANCE DUE:", 8, y)
-           .text(balance.toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
-        y += 10;
-      } else if (change > 0) {
-        doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#15803d")
-           .text("CHANGE:", 8, y)
-           .text(change.toLocaleString("en-IN", { minimumFractionDigits: 2 }), 100, y, { width: 56, align: "right" });
-        y += 10;
-      }
-      y += 5;
+      // 1. Phone row: retro telephone icon
+      doc.save();
+      doc.translate(6, y - 1);
+      doc.scale(0.85);
+      doc.moveTo(1, 2).bezierCurveTo(3, 0, 5, 0, 7, 2).lineTo(6.5, 3.5).bezierCurveTo(5, 2.5, 3, 2.5, 1.5, 3.5).closePath().fillColor("#0f172a").fill();
+      doc.moveTo(2, 4).lineTo(6, 4).lineTo(7.5, 7).lineTo(0.5, 7).closePath().fillColor("#0f172a").fill();
+      doc.restore();
+
+      doc.text(`P: ${displayPhone}`, 15, y);
+      y += 7;
+
+      // 2. Email row: @ icon
+      doc.font("Helvetica-Bold").fontSize(6.5).text("@", 6, y - 0.5);
+      doc.font("Helvetica").fontSize(5.5).text(displayEmail, 15, y);
+      y += 7;
+
+      // 3. Globe row: vector globe icon
+      doc.save();
+      doc.translate(6, y);
+      doc.scale(0.85);
+      doc.circle(3, 3, 3.2).strokeColor("#0f172a").lineWidth(0.5).stroke();
+      doc.moveTo(-0.2, 3).lineTo(6.2, 3).stroke();
+      doc.moveTo(3, -0.2).lineTo(3, 6.2).stroke();
+      doc.ellipse(3, 3, 1.5, 3.2).stroke();
+      doc.restore();
+
+      doc.text(displayWebsite, 15, y);
+      y += 10;
+
+      // Gear pattern separator below contacts
+      drawGearPattern(y);
+      y += 8;
 
       // Footer Section
-      doc.font("Helvetica-Bold").fontSize(8).fillColor("#000000").text("THANK YOU!", 8, y, { align: "center", width: 148 });
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#0f172a").text("THANK YOU!", 6, y, { align: "center", width: 124 });
       y += 10;
 
-      doc.font("Helvetica-Oblique").fontSize(6.5).fillColor("#475569").text("Visit Us Again!", 8, y, { align: "center", width: 148 });
-      y += 10;
-
-      doc.font("Helvetica").fontSize(5.5).fillColor("#94a3b8").text("Powered by ElectroFix", 8, y, { align: "center", width: 148 });
+      doc.font("Helvetica-Oblique").fontSize(6.5).fillColor("#475569").text("Visit Us Again!", 6, y, { align: "center", width: 124 });
+      y += 9;
 
       doc.end();
     } catch (err) {
