@@ -78,3 +78,24 @@ export const generateInvoicePDF = async (req: Request, res: Response, next: Next
     next(error);
   }
 };
+
+export const generateInvoicePDFDirect = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const invoice = req.body;
+    if (!invoice) return res.status(400).json({ message: "Invoice data required" });
+
+    const safeInvNumber = (invoice.invoiceNumber || 'Invoice').replace(/[^a-zA-Z0-9]/g, '_');
+    const fileName = `SriSenthil_${safeInvNumber}.pdf`;
+
+    const buffer = await invoiceService.generateInvoiceBuffer(invoice);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', buffer.length.toString());
+    
+    return res.send(buffer);
+  } catch (error) {
+    console.error("CRITICAL PDF GENERATION ERROR:", error);
+    next(error);
+  }
+};

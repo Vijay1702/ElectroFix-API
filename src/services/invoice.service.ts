@@ -191,19 +191,29 @@ export const deleteInvoice = async (id: string) => {
   return invoiceRepository.remove(id);
 };
 
+let cachedShopPhone: string | null = null;
+let cachedShopEmail: string | null = null;
+let lastSettingsFetch = 0;
+
 export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
   let shopPhone = "8667264983";
   let shopEmail = "rameshvijay871@gmail.com";
   try {
-    const settings = await prisma.setting.findMany();
-    const phoneSetting = settings.find((s: any) => s.settingKey === "shop_phone");
-    if (phoneSetting && phoneSetting.settingValue) {
-      shopPhone = phoneSetting.settingValue;
+    const now = Date.now();
+    if (now - lastSettingsFetch > 60000) {
+      const settings = await prisma.setting.findMany();
+      const phoneSetting = settings.find((s: any) => s.settingKey === "shop_phone");
+      if (phoneSetting && phoneSetting.settingValue) {
+        cachedShopPhone = phoneSetting.settingValue;
+      }
+      const emailSetting = settings.find((s: any) => s.settingKey === "shop_email");
+      if (emailSetting && emailSetting.settingValue) {
+        cachedShopEmail = emailSetting.settingValue;
+      }
+      lastSettingsFetch = now;
     }
-    const emailSetting = settings.find((s: any) => s.settingKey === "shop_email");
-    if (emailSetting && emailSetting.settingValue) {
-      shopEmail = emailSetting.settingValue;
-    }
+    if (cachedShopPhone) shopPhone = cachedShopPhone;
+    if (cachedShopEmail) shopEmail = cachedShopEmail;
   } catch (err) {
     console.error("Failed to fetch shop settings:", err);
   }
