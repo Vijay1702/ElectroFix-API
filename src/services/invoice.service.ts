@@ -5,6 +5,39 @@ import { generateInvoiceNumber } from "../utils/generate-code";
 import PDFDocument = require("pdfkit");
 import prisma from "../config/prisma.config";
 
+const updateProductStock = async (invoiceItems: any[], userId: string, invoiceId: string) => {
+  for (const item of invoiceItems) {
+    if (item.itemType === "PRODUCT" && item.productId) {
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+      });
+
+      if (product) {
+        const previousStock = product.stockQuantity;
+        const currentStock = Math.max(0, previousStock - item.quantity);
+
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stockQuantity: currentStock },
+        });
+
+        await prisma.stockMovement.create({
+          data: {
+            product: { connect: { id: item.productId } },
+            movementType: "OUT",
+            quantity: item.quantity,
+            previousStock,
+            currentStock,
+            referenceType: "INVOICE",
+            referenceId: invoiceId,
+            user: { connect: { id: userId } },
+          },
+        });
+      }
+    }
+  }
+};
+
 export const getInvoices = async (
   pagination: any,
   filters: { search?: string; status?: string },
@@ -89,38 +122,7 @@ export const createInvoice = async (payload: any, userId: string) => {
 
   // Reduce product stock and create stock movements for each product item
   if (invoice.items && invoice.items.length > 0) {
-    for (const item of invoice.items) {
-      if (item.itemType === "PRODUCT" && item.productId) {
-        const product = await prisma.product.findUnique({
-          where: { id: item.productId },
-        });
-
-        if (product) {
-          const previousStock = product.stockQuantity;
-          const currentStock = Math.max(0, previousStock - item.quantity);
-
-          // Update product stock
-          await prisma.product.update({
-            where: { id: item.productId },
-            data: { stockQuantity: currentStock },
-          });
-
-          // Log stock movement
-          await prisma.stockMovement.create({
-            data: {
-              product: { connect: { id: item.productId } },
-              movementType: "OUT",
-              quantity: item.quantity,
-              previousStock,
-              currentStock,
-              referenceType: "INVOICE",
-              referenceId: invoice.id,
-              user: { connect: { id: userId } },
-            },
-          });
-        }
-      }
-    }
+    await updateProductStock(invoice.items, userId, invoice.id);
   }
 
   return invoice;

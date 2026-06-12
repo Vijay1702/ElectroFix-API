@@ -29,8 +29,8 @@ export const getUsers = async (pagination: any, filters: { role?: string; search
 
   // Remove passwords from response
   const usersWithoutPasswords = users.map((user: any) => {
-    const { password, ...u } = user;
-    return u;
+    delete user.password;
+    return user;
   });
 
   return { users: usersWithoutPasswords, total };
@@ -43,8 +43,9 @@ export const getUserById = async (id: string) => {
     throw { statusCode: 404, message: MESSAGES.USER.NOT_FOUND };
   }
 
-  const { password, ...userWithoutPassword } = user;
-  return userWithoutPassword;
+  const u = { ...user } as any;
+  delete u.password;
+  return u;
 };
 
 export const createUser = async (payload: any) => {
@@ -75,8 +76,9 @@ export const createUser = async (payload: any) => {
     operationalStatus: rest.operationalStatus || "Active"
   });
 
-  const { password: _pw, ...createdWithoutPassword } = created as any;
-  return createdWithoutPassword;
+  const u = { ...created } as any;
+  delete u.password;
+  return u;
 };
 
 export const updateUser = async (id: string, payload: any) => {
@@ -109,8 +111,9 @@ export const updateUser = async (id: string, payload: any) => {
   }
 
   const updated = await userRepository.update(id, updateData);
-  const { password: _pw, ...updatedWithoutPassword } = updated as any;
-  return updatedWithoutPassword;
+  const u = { ...updated } as any;
+  delete u.password;
+  return u;
 };
 
 export const deleteUser = async (id: string) => {

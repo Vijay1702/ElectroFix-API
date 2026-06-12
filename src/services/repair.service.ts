@@ -1,7 +1,7 @@
 import * as repairRepository from '../repositories/repair.repository';
 import { MESSAGES } from '../constants/messages.constants';
 import { REPAIR_STATUS } from '../constants/repair-status.constants';
-import { generateJobNumber } from '../utils/generate-code';
+
 import * as notificationService from './notification.service';
 import * as invoiceService from './invoice.service';
 import prisma from '../config/prisma.config';
@@ -13,10 +13,7 @@ export const getRepairJobs = async (pagination: any, filters: { search?: string,
   const where: any = {};
 
   // Role-based filtering
-  if (currentUser && currentUser.role === 'TECHNICIAN') {
-    where.technicianId = currentUser.id;
-  } else if (currentUser && currentUser.role !== 'ADMIN') {
-    // Fallback for any other non-admin role
+  if (currentUser && currentUser.role !== 'ADMIN') {
     where.technicianId = currentUser.id;
   }
 

@@ -16,9 +16,10 @@ export const generateCustomerCode = async (): Promise<string> => {
 
   let nextNumber = 1;
   if (lastCustomer?.customerCode) {
-    const matches = lastCustomer.customerCode.match(/\d+$/);
-    if (matches) {
-      nextNumber = parseInt(matches[0], 10) + 1;
+    const parts = lastCustomer.customerCode.split('-');
+    const lastPart = parts[parts.length - 1];
+    if (lastPart && !isNaN(Number(lastPart))) {
+      nextNumber = parseInt(lastPart, 10) + 1;
     }
   }
 
@@ -37,9 +38,10 @@ export const generateJobNumber = async (): Promise<string> => {
   let nextNumber = 1;
   if (lastJob?.jobNumber) {
     // Extract the last numeric part from the job number
-    const matches = lastJob.jobNumber.match(/\d+$/);
-    if (matches) {
-      nextNumber = parseInt(matches[0], 10) + 1;
+    const parts = lastJob.jobNumber.split('-');
+    const lastPart = parts[parts.length - 1];
+    if (lastPart && !isNaN(Number(lastPart))) {
+      nextNumber = parseInt(lastPart, 10) + 1;
     }
   }
 
@@ -62,9 +64,10 @@ export const generateInvoiceNumber = async (): Promise<string> => {
 
   let nextNumber = 1;
   if (lastInvoice?.invoiceNumber) {
-    const matches = lastInvoice.invoiceNumber.match(/\d+$/);
-    if (matches) {
-      nextNumber = parseInt(matches[0], 10) + 1;
+    const parts = lastInvoice.invoiceNumber.split('-');
+    const lastPart = parts[parts.length - 1];
+    if (lastPart && !isNaN(Number(lastPart))) {
+      nextNumber = parseInt(lastPart, 10) + 1;
     }
   }
 
@@ -87,9 +90,10 @@ export const generateProductCode = async (): Promise<string> => {
 
   let nextNumber = 1;
   if (lastProduct?.productCode) {
-    const matches = lastProduct.productCode.match(/\d+$/);
-    if (matches) {
-      nextNumber = parseInt(matches[0], 10) + 1;
+    const parts = lastProduct.productCode.split('-');
+    const lastPart = parts[parts.length - 1];
+    if (lastPart && !isNaN(Number(lastPart))) {
+      nextNumber = parseInt(lastPart, 10) + 1;
     }
   }
 
