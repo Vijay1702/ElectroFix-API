@@ -4,9 +4,12 @@ import { successResponse } from '../utils/response';
 import { MESSAGES } from '../constants/messages.constants';
 import { AuthRequest } from '../types/express.d';
 
+import * as auditService from '../services/audit.service';
+
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await authService.login(req.body);
+    await auditService.logAction(result.user.id, 'System', 'LOGIN', `User ${result.user.email} logged in`);
     return successResponse(res, result, MESSAGES.AUTH.LOGIN_SUCCESS);
   } catch (error) {
     next(error);

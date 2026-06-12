@@ -4,6 +4,7 @@ import * as productService from '../services/product.service';
 import { successResponse, paginatedResponse } from '../utils/response';
 import { MESSAGES } from '../constants/messages.constants';
 import { parsePagination } from '../utils/pagination';
+import * as auditService from '../services/audit.service';
 
 export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -33,24 +34,28 @@ export const createProduct = async (req: AuthRequest, res: Response, next: NextF
   try {
     const userId = req.user!.id;
     const product = await productService.createProduct(req.body, userId);
+    await auditService.logAction(userId, 'Inventory', 'CREATE', `Created product ${product.name}`, product.id);
     return successResponse(res, product, MESSAGES.PRODUCT.CREATED, 201);
   } catch (error) {
     next(error);
   }
 };
 
-export const updateProduct = async (req: Request, res: Response, next: NextFunction) => {
+export const updateProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const product = await productService.updateProduct(req.params.id as string, req.body);
+    await auditService.logAction(req.user?.id || null, 'Inventory', 'UPDATE', `Updated product ${product.name}`, product.id);
     return successResponse(res, product, MESSAGES.PRODUCT.UPDATED);
   } catch (error) {
     next(error);
   }
 };
 
-export const deleteProduct = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    await productService.deleteProduct(req.params.id as string);
+    const productId = req.params.id as string;
+    await productService.deleteProduct(productId);
+    await auditService.logAction(req.user?.id || null, 'Inventory', 'DELETE', `Deleted product with ID ${productId}`, productId);
     return successResponse(res, null, MESSAGES.PRODUCT.DELETED);
   } catch (error) {
     next(error);

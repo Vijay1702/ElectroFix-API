@@ -14,6 +14,7 @@ import notificationRoutes from './notification.routes';
 import settingRoutes from './setting.routes';
 import uploadRoutes from './upload.routes';
 import attendanceRoutes from './attendance.routes';
+import auditRoutes from './audit.routes';
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use('/notifications', notificationRoutes);
 router.use('/settings', settingRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/attendance', attendanceRoutes);
+router.use('/audit', auditRoutes);
 
 export default router;

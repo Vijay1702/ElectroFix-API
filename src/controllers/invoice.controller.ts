@@ -4,6 +4,7 @@ import { successResponse, paginatedResponse } from '../utils/response';
 import { MESSAGES } from '../constants/messages.constants';
 import { parsePagination } from '../utils/pagination';
 import { AuthRequest } from '../types/express.d';
+import * as auditService from '../services/audit.service';
 
 export const getInvoices = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -35,24 +36,28 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
   try {
     const userId = req.user!.id;
     const invoice = await invoiceService.createInvoice(req.body, userId);
+    await auditService.logAction(userId, 'Sales', 'CREATE', `Created invoice #${invoice.invoiceNumber}`, invoice.id);
     return successResponse(res, invoice, MESSAGES.INVOICE.CREATED, 201);
   } catch (error) {
     next(error);
   }
 };
 
-export const updateInvoice = async (req: Request, res: Response, next: NextFunction) => {
+export const updateInvoice = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const invoice = await invoiceService.updateInvoice(req.params.id as string, req.body);
+    await auditService.logAction(req.user?.id || null, 'Sales', 'UPDATE', `Updated invoice #${invoice.invoiceNumber}`, invoice.id);
     return successResponse(res, invoice, MESSAGES.INVOICE.UPDATED);
   } catch (error) {
     next(error);
   }
 };
 
-export const deleteInvoice = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteInvoice = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    await invoiceService.deleteInvoice(req.params.id as string);
+    const invoiceId = req.params.id as string;
+    await invoiceService.deleteInvoice(invoiceId);
+    await auditService.logAction(req.user?.id || null, 'Sales', 'DELETE', `Deleted invoice with ID ${invoiceId}`, invoiceId);
     return successResponse(res, null, MESSAGES.INVOICE.DELETED);
   } catch (error) {
     next(error);
