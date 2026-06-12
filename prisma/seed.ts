@@ -19,6 +19,12 @@ async function main() {
     create: { name: "TECHNICIAN" },
   });
 
+  const monitorRole = await prisma.role.upsert({
+    where: { name: "MONITOR" },
+    update: {},
+    create: { name: "MONITOR" },
+  });
+
   // Create users
   const hashedPassword = await bcrypt.hash("Admin@123", 10);
 
@@ -52,14 +58,29 @@ async function main() {
     },
   });
 
+  const monitorUser = await prisma.user.upsert({
+    where: { email: "monitor@electrofix.com" },
+    update: {},
+    create: {
+      fullName: "System Monitor",
+      email: "monitor@electrofix.com",
+      phoneNumber: "9840099999",
+      password: hashedPassword,
+      isActive: true,
+      operationalStatus: "Active",
+      perDaySalary: 0,
+      roleId: monitorRole.id,
+    },
+  });
+
   const technicians = [techUser1];
 
   // Create Tamil Nadu settings
   const defaultSettings = [
     { settingKey: "shop_name", settingValue: "ElectroFix Tamil Nadu" },
     { settingKey: "shop_address", settingValue: "No. 42, Anna Salai, Chennai, Tamil Nadu - 600002" },
-    { settingKey: "shop_phone", settingValue: "044-24556677" },
-    { settingKey: "shop_email", settingValue: "contact@electrofix.in" },
+    { settingKey: "shop_phone", settingValue: "+91 86672 64983" },
+    { settingKey: "shop_email", settingValue: "rameshvijay871@gmail.com" },
     { settingKey: "currency", settingValue: "INR" },
     { settingKey: "tax_percentage", settingValue: "18" }, // GST 18%
   ];
@@ -67,7 +88,7 @@ async function main() {
   for (const setting of defaultSettings) {
     await prisma.setting.upsert({
       where: { settingKey: setting.settingKey },
-      update: {},
+      update: { settingValue: setting.settingValue },
       create: setting,
     });
   }
@@ -132,7 +153,7 @@ async function main() {
   const catMotor = await getOrCreateCategory("Motor", "Water motors and pumps");
   const catIronBox = await getOrCreateCategory("Iron Box", "Dry and steam irons");
   const catCooker = await getOrCreateCategory("Cooker", "Induction cookers and pressure cookers");
-  
+
   // Products helper
   const getOrCreateProduct = async (data: any) => {
     const existing = await prisma.product.findUnique({ where: { productCode: data.productCode } });

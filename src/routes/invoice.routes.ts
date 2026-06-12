@@ -55,6 +55,7 @@ router.use(authMiddleware);
 router.get('/', invoiceController.getInvoices);
 router.get('/:id', invoiceController.getInvoiceById);
 router.get('/:id/pdf', invoiceController.generateInvoicePDF);
+router.post('/pdf/direct', invoiceController.generateInvoicePDFDirect);
 router.post('/', roleMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.TECHNICIAN]), validate(createInvoiceSchema), invoiceController.createInvoice);
 router.put('/:id', roleMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.TECHNICIAN]), validate(updateInvoiceSchema), invoiceController.updateInvoice);
 router.delete('/:id', roleMiddleware([ROLES.ADMIN]), invoiceController.deleteInvoice);

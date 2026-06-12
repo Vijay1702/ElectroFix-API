@@ -7,10 +7,12 @@ import { parsePagination } from '../utils/pagination';
 export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pagination = parsePagination(req);
-    const { role, search } = req.query;
+    const { role, search, startDate, endDate } = req.query;
     const { users, total } = await userService.getUsers(pagination, { 
       role: role as string, 
-      search: search as string 
+      search: search as string,
+      startDate: startDate as string,
+      endDate: endDate as string
     });
     const limit = pagination.all ? total : pagination.limit;
     return paginatedResponse(res, users, total, pagination.page, limit, MESSAGES.USER.FETCHED);

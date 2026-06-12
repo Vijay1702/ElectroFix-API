@@ -8,10 +8,12 @@ import { AuthRequest } from '../types/express.d';
 export const getInvoices = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pagination = parsePagination(req);
-    const { search, status } = req.query;
+    const { search, status, startDate, endDate } = req.query;
     const { invoices, total } = await invoiceService.getInvoices(pagination, {
       search: search as string,
-      status: status as string
+      status: status as string,
+      startDate: startDate as string,
+      endDate: endDate as string
     });
     const limit = pagination.all ? total : pagination.limit;
     return paginatedResponse(res, invoices, total, pagination.page, limit, MESSAGES.INVOICE.FETCHED);
@@ -63,6 +65,27 @@ export const generateInvoicePDF = async (req: Request, res: Response, next: Next
     if (!invoice) return res.status(404).json({ message: "Invoice not found" });
 
     // Sanitize filename to avoid browser confusion with slashes or special chars
+    const safeInvNumber = (invoice.invoiceNumber || 'Invoice').replace(/[^a-zA-Z0-9]/g, '_');
+    const fileName = `SriSenthil_${safeInvNumber}.pdf`;
+
+    const buffer = await invoiceService.generateInvoiceBuffer(invoice);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', buffer.length.toString());
+    
+    return res.send(buffer);
+  } catch (error) {
+    console.error("CRITICAL PDF GENERATION ERROR:", error);
+    next(error);
+  }
+};
+
+export const generateInvoicePDFDirect = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const invoice = req.body;
+    if (!invoice) return res.status(400).json({ message: "Invoice data required" });
+
     const safeInvNumber = (invoice.invoiceNumber || 'Invoice').replace(/[^a-zA-Z0-9]/g, '_');
     const fileName = `SriSenthil_${safeInvNumber}.pdf`;
 

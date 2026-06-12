@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:seed": "ts-node prisma/seed.ts",
@@ -17,6 +17,7 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^5.21.1",
+    "prisma": "^5.21.1",
     "@types/pdfkit": "^0.17.6",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
@@ -51,7 +52,6 @@
     "eslint-plugin-sonarjs": "^4.0.3",
     "globals": "^17.6.0",
     "nodemon": "^3.1.14",
-    "prisma": "^5.21.1",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.0"

@@ -8,7 +8,11 @@ import { AuthRequest } from '../types/express.d';
 export const getStockMovements = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pagination = parsePagination(req);
-    const { movements, total } = await stockService.getStockMovements(pagination);
+    const { startDate, endDate } = req.query;
+    const { movements, total } = await stockService.getStockMovements(pagination, {
+      startDate: startDate as string,
+      endDate: endDate as string
+    });
     const limit = pagination.all ? total : pagination.limit;
     return paginatedResponse(res, movements, total, pagination.page, limit, MESSAGES.STOCK.MOVEMENTS_FETCHED);
   } catch (error) {

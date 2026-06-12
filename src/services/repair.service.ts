@@ -6,14 +6,27 @@ import * as notificationService from './notification.service';
 import * as invoiceService from './invoice.service';
 import prisma from '../config/prisma.config';
 
-export const getRepairJobs = async (pagination: any, filters: { search?: string, status?: string }, currentUser: any) => {
+export const getRepairJobs = async (pagination: any, filters: { search?: string, status?: string, startDate?: string, endDate?: string }, currentUser: any) => {
   const { skip, limit, all } = pagination;
-  const { search, status } = filters;
+  const { search, status, startDate, endDate } = filters;
 
   const where: any = {};
+  
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) where.createdAt.gte = new Date(startDate);
+    if (endDate) {
+       const end = new Date(endDate);
+       end.setHours(23, 59, 59, 999);
+       where.createdAt.lte = end;
+    }
+  }
 
   // Role-based filtering
-  if (currentUser && currentUser.role !== 'ADMIN') {
+  if (currentUser && currentUser.role === 'TECHNICIAN') {
+    where.technicianId = currentUser.id;
+  } else if (currentUser && currentUser.role !== 'ADMIN' && currentUser.role !== 'MONITOR') {
+    // Fallback for any other non-admin role
     where.technicianId = currentUser.id;
   }
 
@@ -97,7 +110,7 @@ export const createRepairJob = async (payload: any, creatorId: string) => {
     await notificationService.createNotification(
       repair.technicianId,
       'New Repair Assignment',
-      `You have been assigned a new repair job: ${repair.jobNumber} (${repair.brand} ${repair.model})`,
+      `You have been assigned a new repair job: ${repair.jobNumber}${repair.brand || repair.model ? ` (${[repair.brand, repair.model].filter(Boolean).join(' ')})` : ''}`,
       'assignment'
     );
   }
@@ -159,7 +172,7 @@ export const updateRepairJob = async (id: string, payload: any, userId?: string)
     await notificationService.createNotification(
       updateData.technicianId,
       'New Repair Assignment',
-      `You have been assigned a new repair job: ${updatedRepair.jobNumber} (${updatedRepair.brand} ${updatedRepair.model})`,
+      `You have been assigned a new repair job: ${updatedRepair.jobNumber}${updatedRepair.brand || updatedRepair.model ? ` (${[updatedRepair.brand, updatedRepair.model].filter(Boolean).join(' ')})` : ''}`,
       'assignment'
     );
   }

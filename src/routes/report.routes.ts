@@ -7,7 +7,7 @@ import { ROLES } from '../constants/roles.constants';
 const router = Router();
 
 router.use(authMiddleware);
-router.use(roleMiddleware([ROLES.ADMIN]));
+router.use(roleMiddleware([ROLES.ADMIN, ROLES.MONITOR]));
 
 /**
  * @swagger

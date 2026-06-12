@@ -5,12 +5,25 @@ import { PAYMENT_STATUS } from '../constants/payment-status.constants';
 import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma.config';
 
-export const getPayments = async (pagination: any) => {
+export const getPayments = async (pagination: any, filters?: { search?: string; startDate?: string; endDate?: string }) => {
   const { skip, limit, all } = pagination;
+  const where: any = {};
+  
+  if (filters?.startDate || filters?.endDate) {
+    where.createdAt = {};
+    if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
+    if (filters.endDate) {
+       const end = new Date(filters.endDate);
+       end.setHours(23, 59, 59, 999);
+       where.createdAt.lte = end;
+    }
+  }
+
   const payments = await paymentRepository.list({
-    ...(all ? {} : { skip, take: limit })
+    ...(all ? {} : { skip, take: limit }),
+    where
   });
-  const total = await paymentRepository.count();
+  const total = await paymentRepository.count(where);
 
   return { payments, total };
 };

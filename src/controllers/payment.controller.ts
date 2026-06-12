@@ -8,7 +8,12 @@ import { AuthRequest } from '../types/express.d';
 export const getPayments = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pagination = parsePagination(req);
-    const { payments, total } = await paymentService.getPayments(pagination);
+    const { search, startDate, endDate } = req.query;
+    const { payments, total } = await paymentService.getPayments(pagination, {
+      search: search as string,
+      startDate: startDate as string,
+      endDate: endDate as string
+    });
     const limit = pagination.all ? total : pagination.limit;
     return paginatedResponse(res, payments, total, pagination.page, limit, MESSAGES.PAYMENT.FETCHED);
   } catch (error) {

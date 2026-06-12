@@ -5,12 +5,25 @@ import { STOCK_MOVEMENT_TYPE } from '../constants/stock-movement.constants';
 import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma.config';
 
-export const getStockMovements = async (pagination: any) => {
+export const getStockMovements = async (pagination: any, filters?: { startDate?: string; endDate?: string }) => {
   const { skip, limit, all } = pagination;
+  
+  const where: any = {};
+  if (filters?.startDate || filters?.endDate) {
+    where.createdAt = {};
+    if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
+    if (filters.endDate) {
+       const end = new Date(filters.endDate);
+       end.setHours(23, 59, 59, 999);
+       where.createdAt.lte = end;
+    }
+  }
+
   const movements = await stockRepository.list({
-    ...(all ? {} : { skip, take: limit })
+    ...(all ? {} : { skip, take: limit }),
+    where
   });
-  const total = await stockRepository.count();
+  const total = await stockRepository.count(where);
 
   return { movements, total };
 };

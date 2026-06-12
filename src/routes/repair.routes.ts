@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import * as repairController from '../controllers/repair.controller';
+import * as callLogController from '../controllers/call-log.controller';
 import { validate } from '../middlewares/validate.middleware';
 import { createRepairJobSchema, updateRepairJobSchema, updateRepairStatusSchema } from '../validators/repair.validator';
+import { createCallLogSchema } from '../validators/call-log.validator';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { upload } from '../middlewares/upload.middleware';
 
@@ -47,6 +49,8 @@ router.get('/:id/timeline', repairController.getRepairTimeline);
 router.post('/', validate(createRepairJobSchema), repairController.createRepairJob);
 router.put('/:id', validate(updateRepairJobSchema), repairController.updateRepairJob);
 router.patch('/:id/status', validate(updateRepairStatusSchema), repairController.updateRepairStatus);
+router.post('/:id/calls', validate(createCallLogSchema), callLogController.createCallLog);
+router.get('/:id/calls', callLogController.getCallLogs);
 router.delete('/:id', repairController.deleteRepairJob);
 router.post('/:id/upload', (req, res, next) => {
   req.params.type = 'repairs';
