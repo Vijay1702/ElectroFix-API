@@ -15,7 +15,7 @@ export const getRepairJobs = async (pagination: any, filters: { search?: string,
   // Role-based filtering
   if (currentUser && currentUser.role === 'TECHNICIAN') {
     where.technicianId = currentUser.id;
-  } else if (currentUser && currentUser.role !== 'ADMIN') {
+  } else if (currentUser && currentUser.role !== 'ADMIN' && currentUser.role !== 'MONITOR') {
     // Fallback for any other non-admin role
     where.technicianId = currentUser.id;
   }

@@ -38,8 +38,8 @@ router.use(authMiddleware);
  *       201:
  *         description: User created
  */
-router.get('/', roleMiddleware([ROLES.ADMIN]), userController.getUsers);
-router.get('/:id', roleMiddleware([ROLES.ADMIN]), userController.getUserById);
+router.get('/', roleMiddleware([ROLES.ADMIN, ROLES.MONITOR]), userController.getUsers);
+router.get('/:id', roleMiddleware([ROLES.ADMIN, ROLES.MONITOR]), userController.getUserById);
 router.post('/', roleMiddleware([ROLES.ADMIN]), validate(createUserSchema), userController.createUser);
 router.put('/:id', validate(updateUserSchema), userController.updateUser);
 router.delete('/:id', userController.deleteUser);

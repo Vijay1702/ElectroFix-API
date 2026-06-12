@@ -19,6 +19,12 @@ async function main() {
     create: { name: "TECHNICIAN" },
   });
 
+  const monitorRole = await prisma.role.upsert({
+    where: { name: "MONITOR" },
+    update: {},
+    create: { name: "MONITOR" },
+  });
+
   // Create users
   const hashedPassword = await bcrypt.hash("Admin@123", 10);
 
@@ -49,6 +55,21 @@ async function main() {
       operationalStatus: "Active",
       perDaySalary: 750.00,
       roleId: technicianRole.id,
+    },
+  });
+
+  const monitorUser = await prisma.user.upsert({
+    where: { email: "monitor@electrofix.com" },
+    update: {},
+    create: {
+      fullName: "System Monitor",
+      email: "monitor@electrofix.com",
+      phoneNumber: "9840099999",
+      password: hashedPassword,
+      isActive: true,
+      operationalStatus: "Active",
+      perDaySalary: 0,
+      roleId: monitorRole.id,
     },
   });
 
