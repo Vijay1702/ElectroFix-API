@@ -250,14 +250,100 @@ export const getTopProducts = async (limit: number = 5, startDateStr?: string, e
   });
 
   return grouped.map((g: any) => {
-    const p = products.find(prod => prod.id === g.productId);
+    const product = products.find((p: any) => p.id === g.productId);
     return {
-      id: p?.id,
-      name: p?.name,
-      productCode: p?.productCode,
-      category: p?.category?.name,
+      id: g.productId,
+      name: product?.name || 'Unknown',
+      category: product?.category?.name || 'General',
       totalRevenue: Number(g._sum.totalPrice || 0),
       totalQuantity: Number(g._sum.quantity || 0),
+    };
+  });
+};
+
+export const getTopRepairDevices = async (limit: number = 5, startDateStr?: string, endDateStr?: string) => {
+  const where: any = { repairJobId: { not: null } };
+  
+  if (startDateStr || endDateStr) {
+    where.createdAt = {};
+    if (startDateStr) where.createdAt.gte = new Date(startDateStr);
+    if (endDateStr) {
+       const end = new Date(endDateStr);
+       end.setHours(23, 59, 59, 999);
+       where.createdAt.lte = end;
+    }
+  }
+
+  // Fetch invoices with repair jobs to aggregate by device type in memory (Prisma doesn't group by relation)
+  const invoices = await prisma.invoice.findMany({
+    where,
+    select: {
+      grandTotal: true,
+      repairJob: { select: { deviceType: true } }
+    }
+  });
+
+  const deviceRevenueMap: Record<string, number> = {};
+  const deviceCountMap: Record<string, number> = {};
+
+  invoices.forEach(inv => {
+    const deviceType = inv.repairJob?.deviceType || 'Unknown Device';
+    deviceRevenueMap[deviceType] = (deviceRevenueMap[deviceType] || 0) + Number(inv.grandTotal || 0);
+    deviceCountMap[deviceType] = (deviceCountMap[deviceType] || 0) + 1;
+  });
+
+  const sortedDevices = Object.entries(deviceRevenueMap)
+    .sort(([, revA], [, revB]) => revB - revA)
+    .slice(0, limit)
+    .map(([deviceType, revenue]) => ({
+      name: deviceType,
+      totalRevenue: revenue,
+      totalJobs: deviceCountMap[deviceType],
+    }));
+
+  return sortedDevices;
+};
+
+export const getTopCustomers = async (limit: number = 5, startDateStr?: string, endDateStr?: string) => {
+  const where: any = {};
+  
+  if (startDateStr || endDateStr) {
+    where.createdAt = {};
+    if (startDateStr) where.createdAt.gte = new Date(startDateStr);
+    if (endDateStr) {
+       const end = new Date(endDateStr);
+       end.setHours(23, 59, 59, 999);
+       where.createdAt.lte = end;
+    }
+  }
+
+  const grouped = await prisma.invoice.groupBy({
+    by: ['customerId'],
+    where,
+    _sum: {
+      grandTotal: true,
+    },
+    orderBy: {
+      _sum: {
+        grandTotal: 'desc',
+      },
+    },
+    take: limit,
+  });
+
+  const customerIds = grouped.map((g: any) => g.customerId as string);
+  const customers = await prisma.customer.findMany({
+    where: { id: { in: customerIds } },
+    select: { id: true, fullName: true, customerCode: true }
+  });
+
+  return grouped.map((g: any) => {
+    const customer = customers.find((c: any) => c.id === g.customerId);
+    return {
+      id: g.customerId,
+      name: customer?.fullName || 'Walk-in',
+      code: customer?.customerCode || 'N/A',
+      totalRevenue: Number(g._sum.grandTotal || 0),
     };
   });
 };

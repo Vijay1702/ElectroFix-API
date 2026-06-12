@@ -80,3 +80,25 @@ export const getTopProducts = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+export const getTopRepairDevices = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { startDate, endDate, limit } = req.query;
+    const limitNum = limit ? parseInt(limit as string) : 5;
+    const devices = await dashboardService.getTopRepairDevices(limitNum, startDate as string, endDate as string);
+    return successResponse(res, devices, "Top repair devices fetched successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getTopCustomers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { startDate, endDate, limit } = req.query;
+    const limitNum = limit ? parseInt(limit as string) : 5;
+    const customers = await dashboardService.getTopCustomers(limitNum, startDate as string, endDate as string);
+    return successResponse(res, customers, "Top customers fetched successfully");
+  } catch (error) {
+    next(error);
+  }
+};

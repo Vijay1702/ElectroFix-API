@@ -32,5 +32,7 @@ router.get('/low-stock', dashboardController.getLowStockItems);
 router.get('/technician-workload', dashboardController.getTechnicianWorkload);
 router.get('/weekly-performance', dashboardController.getWeeklyPerformance);
 router.get('/top-products', dashboardController.getTopProducts);
+router.get('/top-devices', dashboardController.getTopRepairDevices);
+router.get('/top-customers', dashboardController.getTopCustomers);
 
 export default router;
