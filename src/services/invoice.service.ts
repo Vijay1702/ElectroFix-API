@@ -7,12 +7,22 @@ import prisma from "../config/prisma.config";
 
 export const getInvoices = async (
   pagination: any,
-  filters: { search?: string; status?: string },
+  filters: { search?: string; status?: string; startDate?: string; endDate?: string },
 ) => {
   const { skip, limit, all } = pagination;
-  const { search, status } = filters;
+  const { search, status, startDate, endDate } = filters;
 
   const where: any = {};
+
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) where.createdAt.gte = new Date(startDate);
+    if (endDate) {
+       const end = new Date(endDate);
+       end.setHours(23, 59, 59, 999);
+       where.createdAt.lte = end;
+    }
+  }
 
   if (status) {
     where.paymentStatus = status;

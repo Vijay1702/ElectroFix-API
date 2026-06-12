@@ -8,10 +8,10 @@ import { AuthRequest } from '../types/express.d';
 export const getRepairJobs = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const pagination = parsePagination(req);
-    const { search, status } = req.query;
+    const { search, status, startDate, endDate } = req.query;
     const { repairs, total } = await repairService.getRepairJobs(
       pagination, 
-      { search: search as string, status: status as string },
+      { search: search as string, status: status as string, startDate: startDate as string, endDate: endDate as string },
       req.user
     );
     const limit = pagination.all ? total : pagination.limit;

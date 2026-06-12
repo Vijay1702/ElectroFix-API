@@ -8,10 +8,12 @@ import { AuthRequest } from '../types/express.d';
 export const getInvoices = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pagination = parsePagination(req);
-    const { search, status } = req.query;
+    const { search, status, startDate, endDate } = req.query;
     const { invoices, total } = await invoiceService.getInvoices(pagination, {
       search: search as string,
-      status: status as string
+      status: status as string,
+      startDate: startDate as string,
+      endDate: endDate as string
     });
     const limit = pagination.all ? total : pagination.limit;
     return paginatedResponse(res, invoices, total, pagination.page, limit, MESSAGES.INVOICE.FETCHED);

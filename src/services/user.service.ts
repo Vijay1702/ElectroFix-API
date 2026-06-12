@@ -3,9 +3,9 @@ import * as userRepository from '../repositories/user.repository';
 import { MESSAGES } from '../constants/messages.constants';
 import prisma from '../config/prisma.config';
 
-export const getUsers = async (pagination: any, filters: { role?: string; search?: string } = {}) => {
+export const getUsers = async (pagination: any, filters: { role?: string; search?: string; startDate?: string; endDate?: string } = {}) => {
   const { skip, limit, all } = pagination;
-  const { role, search } = filters;
+  const { role, search, startDate, endDate } = filters;
 
   const where: any = {};
 
@@ -19,6 +19,16 @@ export const getUsers = async (pagination: any, filters: { role?: string; search
       { email: { contains: search, mode: 'insensitive' } },
       { phoneNumber: { contains: search, mode: 'insensitive' } },
     ];
+  }
+
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) where.createdAt.gte = new Date(startDate);
+    if (endDate) {
+       const end = new Date(endDate);
+       end.setHours(23, 59, 59, 999);
+       where.createdAt.lte = end;
+    }
   }
 
   const users = await userRepository.list({

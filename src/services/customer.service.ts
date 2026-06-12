@@ -3,7 +3,7 @@ import { MESSAGES } from '../constants/messages.constants';
 import { generateCustomerCode } from '../utils/generate-code';
 import prisma from '../config/prisma.config';
 
-export const getCustomers = async (pagination: any, search?: string) => {
+export const getCustomers = async (pagination: any, search?: string, startDate?: string, endDate?: string) => {
   const { skip, limit, all } = pagination;
   
   const where: any = {};
@@ -14,6 +14,16 @@ export const getCustomers = async (pagination: any, search?: string) => {
       { customerCode: { contains: search, mode: 'insensitive' } },
       { address: { contains: search, mode: 'insensitive' } },
     ];
+  }
+
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) where.createdAt.gte = new Date(startDate);
+    if (endDate) {
+       const end = new Date(endDate);
+       end.setHours(23, 59, 59, 999);
+       where.createdAt.lte = end;
+    }
   }
 
   const customers = await customerRepository.list({
