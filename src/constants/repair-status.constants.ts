@@ -2,6 +2,7 @@ export const REPAIR_STATUS = {
   NOT_STARTED: "not_started",
   WORK_IN_PROGRESS: "work_in_progress",
   PENDING_TO_DELIVER: "pending_to_deliver",
+  BILL_PAYMENTED: "bill_paymented",
   DELIVERED: "delivered",
   DECLINED: "declined",
 } as const;

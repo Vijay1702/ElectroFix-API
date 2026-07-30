@@ -1,6 +1,7 @@
 import * as invoiceRepository from "../repositories/invoice.repository";
 import { MESSAGES } from "../constants/messages.constants";
 import { PAYMENT_STATUS } from "../constants/payment-status.constants";
+import { REPAIR_STATUS } from "../constants/repair-status.constants";
 import { generateInvoiceNumber } from "../utils/generate-code";
 import PDFDocument = require("pdfkit");
 import prisma from "../config/prisma.config";
@@ -80,21 +81,29 @@ export const createInvoice = async (payload: any, userId: string) => {
   });
 
   if (paymentStatus === PAYMENT_STATUS.PAID && payload.repairJobId) {
-    await prisma.repairJob.update({
-      where: { id: payload.repairJobId },
-      data: { status: "delivered" },
-    });
+    const linkedJob = await prisma.repairJob.findUnique({ where: { id: payload.repairJobId } });
 
-    await prisma.repairStatusHistory.create({
-      data: {
-        repairJob: { connect: { id: payload.repairJobId } },
-        oldStatus: "pending_to_deliver",
-        newStatus: "delivered",
-        user: { connect: { id: userId } },
-        notes:
-          "Status updated to delivered automatically as invoice payment completed in full.",
-      },
-    });
+    if (
+      linkedJob &&
+      linkedJob.status !== REPAIR_STATUS.DELIVERED &&
+      linkedJob.status !== REPAIR_STATUS.BILL_PAYMENTED
+    ) {
+      await prisma.repairJob.update({
+        where: { id: payload.repairJobId },
+        data: { status: REPAIR_STATUS.BILL_PAYMENTED },
+      });
+
+      await prisma.repairStatusHistory.create({
+        data: {
+          repairJob: { connect: { id: payload.repairJobId } },
+          oldStatus: linkedJob.status,
+          newStatus: REPAIR_STATUS.BILL_PAYMENTED,
+          user: { connect: { id: userId } },
+          notes:
+            "Status updated to Bill Paymented automatically as invoice payment completed in full.",
+        },
+      });
+    }
   }
 
   // Reduce product stock and create stock movements for each product item
@@ -162,28 +171,26 @@ export const updateInvoice = async (id: string, payload: any) => {
     updatedInvoice.paymentStatus === PAYMENT_STATUS.PAID &&
     updatedInvoice.repairJobId
   ) {
-    await prisma.repairJob.update({
-      where: { id: updatedInvoice.repairJobId },
-      data: { status: "delivered" },
-    });
+    const linkedJob = await prisma.repairJob.findUnique({ where: { id: updatedInvoice.repairJobId } });
 
-    const existingHistory = await prisma.repairStatusHistory.findFirst({
-      where: {
-        repairJobId: updatedInvoice.repairJobId,
-        newStatus: "delivered",
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    if (
+      linkedJob &&
+      linkedJob.status !== REPAIR_STATUS.DELIVERED &&
+      linkedJob.status !== REPAIR_STATUS.BILL_PAYMENTED
+    ) {
+      await prisma.repairJob.update({
+        where: { id: updatedInvoice.repairJobId },
+        data: { status: REPAIR_STATUS.BILL_PAYMENTED },
+      });
 
-    if (!existingHistory) {
       await prisma.repairStatusHistory.create({
         data: {
           repairJob: { connect: { id: updatedInvoice.repairJobId } },
-          oldStatus: "pending_to_deliver",
-          newStatus: "delivered",
+          oldStatus: linkedJob.status,
+          newStatus: REPAIR_STATUS.BILL_PAYMENTED,
           user: { connect: { id: updatedInvoice.createdBy } },
           notes:
-            "Status updated to delivered automatically as invoice payment completed in full.",
+            "Status updated to Bill Paymented automatically as invoice payment completed in full.",
         },
       });
     }

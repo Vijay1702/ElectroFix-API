@@ -1,6 +1,10 @@
 import dotenv from "dotenv";
 
-dotenv.config({ override: true });
+// SKIP_DOTENV lets a caller (e.g. the e2e test harness) fully control process.env
+// via child_process spawn options without the committed .env file clobbering it.
+if (process.env.SKIP_DOTENV !== "true") {
+  dotenv.config({ override: true });
+}
 
 export const env = {
   PORT: parseInt(process.env.PORT || "5000", 10),

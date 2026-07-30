@@ -1,7 +1,13 @@
 node_modules/
 dist/
 .env
+.env.test
+.env.test.ui
 *.log
 src/logs/*.log
 uploads/
 .DS_Store
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

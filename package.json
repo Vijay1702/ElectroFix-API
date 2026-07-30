@@ -8,7 +8,9 @@
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "prisma:bootstrap": "ts-node prisma/bootstrap.ts"
+    "prisma:bootstrap": "ts-node prisma/bootstrap.ts",
+    "prisma:seed:e2e": "ts-node prisma/seed.e2e.ts",
+    "test:e2e": "playwright test"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +18,6 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^5.21.1",
-    "prisma": "^5.21.1",
     "@types/pdfkit": "^0.17.6",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
@@ -28,6 +29,7 @@
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
     "pdfkit": "^0.18.0",
+    "prisma": "^5.21.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^14.0.0",
@@ -35,6 +37,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

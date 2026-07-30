@@ -2,6 +2,7 @@ import * as paymentRepository from '../repositories/payment.repository';
 import * as invoiceRepository from '../repositories/invoice.repository';
 import { MESSAGES } from '../constants/messages.constants';
 import { PAYMENT_STATUS } from '../constants/payment-status.constants';
+import { REPAIR_STATUS } from '../constants/repair-status.constants';
 import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma.config';
 
@@ -78,20 +79,28 @@ export const createPayment = async (payload: any, userId: string) => {
     });
 
     if (newStatus === PAYMENT_STATUS.PAID && invoice.repairJobId) {
-      await tx.repairJob.update({
-        where: { id: invoice.repairJobId },
-        data: { status: 'delivered' },
-      });
+      const linkedJob = await tx.repairJob.findUnique({ where: { id: invoice.repairJobId } });
 
-      await tx.repairStatusHistory.create({
-        data: {
-          repairJob: { connect: { id: invoice.repairJobId } },
-          oldStatus: 'pending_to_deliver',
-          newStatus: 'delivered',
-          user: { connect: { id: userId } },
-          notes: 'Status updated to delivered automatically as invoice payment completed in full.',
-        },
-      });
+      if (
+        linkedJob &&
+        linkedJob.status !== REPAIR_STATUS.DELIVERED &&
+        linkedJob.status !== REPAIR_STATUS.BILL_PAYMENTED
+      ) {
+        await tx.repairJob.update({
+          where: { id: invoice.repairJobId },
+          data: { status: REPAIR_STATUS.BILL_PAYMENTED },
+        });
+
+        await tx.repairStatusHistory.create({
+          data: {
+            repairJob: { connect: { id: invoice.repairJobId } },
+            oldStatus: linkedJob.status,
+            newStatus: REPAIR_STATUS.BILL_PAYMENTED,
+            user: { connect: { id: userId } },
+            notes: 'Status updated to Bill Paymented automatically as invoice payment completed in full.',
+          },
+        });
+      }
     }
 
     return payment;

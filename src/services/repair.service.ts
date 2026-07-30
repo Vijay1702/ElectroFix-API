@@ -88,19 +88,23 @@ export const createRepairJob = async (payload: any, creatorId: string) => {
     throw { statusCode: 400, message: "A repair job with this Job Number already exists." };
   }
 
+  const isFullyPaidAdvance = rest.advanceAmount && rest.estimatedCost &&
+    Number(rest.advanceAmount) === Number(rest.estimatedCost) && Number(rest.advanceAmount) > 0;
+  const initialStatus = isFullyPaidAdvance ? REPAIR_STATUS.BILL_PAYMENTED : REPAIR_STATUS.NOT_STARTED;
+
   const repair = await repairRepository.create({
     ...rest,
     receivedDate: receivedDate ? new Date(receivedDate) : new Date(),
     expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : null,
     jobNumber,
-    status: REPAIR_STATUS.NOT_STARTED,
+    status: initialStatus,
   });
 
   // Add initial status history
   await repairRepository.addStatusHistory({
     repairJob: { connect: { id: repair.id } },
     oldStatus: '',
-    newStatus: REPAIR_STATUS.NOT_STARTED,
+    newStatus: initialStatus,
     user: { connect: { id: creatorId } },
     notes: 'Repair job created',
   });
@@ -154,16 +158,31 @@ export const updateRepairJob = async (id: string, payload: any, userId?: string)
   if (deliveredDate) updateData.deliveredDate = new Date(deliveredDate);
   if (status) updateData.status = status;
 
+  // Auto-flip to "Bill Paymented" once the advance covers the full estimated cost,
+  // unless the job is already delivered/bill-paymented or the caller set status explicitly.
+  const effectiveAdvance = rest.advanceAmount !== undefined ? rest.advanceAmount : repair.advanceAmount;
+  const effectiveCost = rest.estimatedCost !== undefined ? rest.estimatedCost : repair.estimatedCost;
+  const isFullyPaidAdvance = effectiveAdvance && effectiveCost &&
+    Number(effectiveAdvance) === Number(effectiveCost) && Number(effectiveAdvance) > 0;
+  if (
+    isFullyPaidAdvance &&
+    !status &&
+    repair.status !== REPAIR_STATUS.DELIVERED &&
+    repair.status !== REPAIR_STATUS.BILL_PAYMENTED
+  ) {
+    updateData.status = REPAIR_STATUS.BILL_PAYMENTED;
+  }
+
   const updatedRepair = await repairRepository.update(id, updateData);
 
   // If status changed, record it in history
-  if (status && status !== repair.status && userId) {
+  if (updateData.status && updateData.status !== repair.status && userId) {
     await repairRepository.addStatusHistory({
       repairJob: { connect: { id } },
       oldStatus: repair.status,
-      newStatus: status,
+      newStatus: updateData.status,
       user: { connect: { id: userId } },
-      notes: `Status updated via job edit`,
+      notes: status ? `Status updated via job edit` : `Status updated to Bill Paymented automatically as advance payment equals estimated cost.`,
     });
   }
 

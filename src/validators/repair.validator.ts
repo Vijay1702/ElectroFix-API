@@ -17,11 +17,11 @@ export const createRepairJobSchema = z.object({
     expectedDeliveryDate: z.string().optional(),
   }).refine((data) => {
     if (data.advanceAmount !== undefined && data.estimatedCost !== undefined) {
-      return data.advanceAmount < data.estimatedCost;
+      return data.advanceAmount <= data.estimatedCost;
     }
     return true;
   }, {
-    message: "Advance amount must be less than estimated cost",
+    message: "Advance amount cannot exceed estimated cost",
     path: ["advanceAmount"],
   }),
 });
@@ -43,11 +43,11 @@ export const updateRepairJobSchema = z.object({
     deliveredDate: z.string().optional(),
   }).refine((data) => {
     if (data.advanceAmount !== undefined && data.estimatedCost !== undefined) {
-      return data.advanceAmount < data.estimatedCost;
+      return data.advanceAmount <= data.estimatedCost;
     }
     return true;
   }, {
-    message: "Advance amount must be less than estimated cost",
+    message: "Advance amount cannot exceed estimated cost",
     path: ["advanceAmount"],
   }),
 });
