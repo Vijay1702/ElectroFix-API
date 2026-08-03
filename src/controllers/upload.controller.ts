@@ -8,8 +8,8 @@ export const uploadFile = async (req: Request, res: Response, next: NextFunction
       throw { statusCode: 400, message: 'No file uploaded' };
     }
     
-    const { type } = req.params;
-    const fileUrl = `/uploads/${type || 'general'}/${req.file.filename}`;
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const fileUrl = `data:${req.file.mimetype};base64,${b64}`;
     
     return successResponse(res, { fileUrl }, MESSAGES.UPLOAD.SUCCESS);
   } catch (error) {
