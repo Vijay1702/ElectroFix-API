@@ -13,18 +13,39 @@ import { swaggerSpec } from './config/swagger.config';
 const app: Application = express();
 
 // Security Middlewares
-// app.use(helmet());
-app.use(cors());
+app.use(
+  helmet({
+    // Swagger UI relies on inline scripts/styles; a strict default CSP breaks it.
+    contentSecurityPolicy: false,
+    // Uploaded images/PDFs are meant to be embedded from the separately-hosted frontend origin.
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+app.use(
+  cors({
+    origin: env.CORS_ORIGIN,
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: env.NODE_ENV === 'development' ? 10000 : 100, // higher limit in dev mode
+  max: env.NODE_ENV === 'development' ? 10000 : 500, // higher limit in dev mode
   message: 'Too many requests from this IP, please try again after 15 minutes',
 });
 app.use('/api/', limiter);
+
+// Stricter limiter on login to slow down credential stuffing / brute force
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: env.NODE_ENV === 'development' ? 10000 : 10,
+  message: 'Too many login attempts from this IP, please try again after 15 minutes',
+  skipSuccessfulRequests: true,
+});
+app.use(`${env.API_PREFIX}/auth/login`, loginLimiter);
 
 // Logging
 if (env.NODE_ENV === 'development') {

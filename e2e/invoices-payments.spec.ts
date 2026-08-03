@@ -215,7 +215,7 @@ test.describe("invoices", () => {
 });
 
 test.describe("payments", () => {
-  test("a full payment moves the invoice to paid and auto-delivers a linked repair job", async ({ request }) => {
+  test("a full payment via the Payments module moves the invoice to paid and advances a linked repair job to bill_paymented (not delivered — delivery is a separate manual step, or an auto-transition when paid directly on the invoice)", async ({ request }) => {
     const { accessToken } = await loginAs(request, "ADMIN");
     const headers = authHeader(accessToken);
     const customer = await createCustomer(request, accessToken);
@@ -246,7 +246,7 @@ test.describe("payments", () => {
     expect(Number(updatedInvoice.pendingAmount)).toBe(0);
 
     const repairAfter = await request.get(`repair-jobs/${repair.id}`, { headers });
-    expect((await repairAfter.json()).data.status).toBe("delivered");
+    expect((await repairAfter.json()).data.status).toBe("bill_paymented");
   });
 
   test("a partial payment leaves the invoice partial", async ({ request }) => {

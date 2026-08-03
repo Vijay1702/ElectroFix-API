@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
+import fs from 'fs';
 import * as repairService from '../services/repair.service';
 import { successResponse, paginatedResponse } from '../utils/response';
 import { MESSAGES } from '../constants/messages.constants';
 import { parsePagination } from '../utils/pagination';
 import { AuthRequest } from '../types/express.d';
 import * as auditService from '../services/audit.service';
+import { matchesFileSignature } from '../utils/file-signature';
 
 export const getRepairJobs = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -88,6 +90,11 @@ export const uploadRepairImage = async (req: AuthRequest, res: Response, next: N
   try {
     if (!req.file) {
       throw { statusCode: 400, message: 'No file uploaded' };
+    }
+    const buffer = fs.readFileSync(req.file.path);
+    if (!matchesFileSignature(buffer, req.file.mimetype)) {
+      fs.unlink(req.file.path, () => {});
+      throw { statusCode: 400, message: MESSAGES.UPLOAD.INVALID_TYPE };
     }
     const fileUrl = `/uploads/repairs/${req.file.filename}`;
     // In a real app, you would save this to the FileUpload table and link it to the repair job

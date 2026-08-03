@@ -83,24 +83,23 @@ export const createInvoice = async (payload: any, userId: string) => {
   if (paymentStatus === PAYMENT_STATUS.PAID && payload.repairJobId) {
     const linkedJob = await prisma.repairJob.findUnique({ where: { id: payload.repairJobId } });
 
-    if (
-      linkedJob &&
-      linkedJob.status !== REPAIR_STATUS.DELIVERED &&
-      linkedJob.status !== REPAIR_STATUS.BILL_PAYMENTED
-    ) {
+    // Paid in full directly on the invoice (as opposed to via the Payments module,
+    // which only advances the job to BILL_PAYMENTED) — treat this as the customer
+    // having settled up and collected the item.
+    if (linkedJob && linkedJob.status !== REPAIR_STATUS.DELIVERED) {
       await prisma.repairJob.update({
         where: { id: payload.repairJobId },
-        data: { status: REPAIR_STATUS.BILL_PAYMENTED },
+        data: { status: REPAIR_STATUS.DELIVERED },
       });
 
       await prisma.repairStatusHistory.create({
         data: {
           repairJob: { connect: { id: payload.repairJobId } },
           oldStatus: linkedJob.status,
-          newStatus: REPAIR_STATUS.BILL_PAYMENTED,
+          newStatus: REPAIR_STATUS.DELIVERED,
           user: { connect: { id: userId } },
           notes:
-            "Status updated to Bill Paymented automatically as invoice payment completed in full.",
+            "Status updated to Delivered automatically as the invoice was paid in full.",
         },
       });
     }
@@ -173,24 +172,23 @@ export const updateInvoice = async (id: string, payload: any) => {
   ) {
     const linkedJob = await prisma.repairJob.findUnique({ where: { id: updatedInvoice.repairJobId } });
 
-    if (
-      linkedJob &&
-      linkedJob.status !== REPAIR_STATUS.DELIVERED &&
-      linkedJob.status !== REPAIR_STATUS.BILL_PAYMENTED
-    ) {
+    // Paid in full directly on the invoice (as opposed to via the Payments module,
+    // which only advances the job to BILL_PAYMENTED) — treat this as the customer
+    // having settled up and collected the item.
+    if (linkedJob && linkedJob.status !== REPAIR_STATUS.DELIVERED) {
       await prisma.repairJob.update({
         where: { id: updatedInvoice.repairJobId },
-        data: { status: REPAIR_STATUS.BILL_PAYMENTED },
+        data: { status: REPAIR_STATUS.DELIVERED },
       });
 
       await prisma.repairStatusHistory.create({
         data: {
           repairJob: { connect: { id: updatedInvoice.repairJobId } },
           oldStatus: linkedJob.status,
-          newStatus: REPAIR_STATUS.BILL_PAYMENTED,
+          newStatus: REPAIR_STATUS.DELIVERED,
           user: { connect: { id: updatedInvoice.createdBy } },
           notes:
-            "Status updated to Bill Paymented automatically as invoice payment completed in full.",
+            "Status updated to Delivered automatically as the invoice was paid in full.",
         },
       });
     }

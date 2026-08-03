@@ -5,9 +5,12 @@ import { validate } from '../middlewares/validate.middleware';
 import { createRepairJobSchema, updateRepairJobSchema, updateRepairStatusSchema } from '../validators/repair.validator';
 import { createCallLogSchema } from '../validators/call-log.validator';
 import { authMiddleware } from '../middlewares/auth.middleware';
+import { roleMiddleware } from '../middlewares/role.middleware';
+import { ROLES } from '../constants/roles.constants';
 import { upload } from '../middlewares/upload.middleware';
 
 const router = Router();
+const canWrite = roleMiddleware([ROLES.ADMIN, ROLES.STAFF, ROLES.TECHNICIAN]);
 
 router.use(authMiddleware);
 
@@ -46,13 +49,13 @@ router.use(authMiddleware);
 router.get('/', repairController.getRepairJobs);
 router.get('/:id', repairController.getRepairJobById);
 router.get('/:id/timeline', repairController.getRepairTimeline);
-router.post('/', validate(createRepairJobSchema), repairController.createRepairJob);
-router.put('/:id', validate(updateRepairJobSchema), repairController.updateRepairJob);
-router.patch('/:id/status', validate(updateRepairStatusSchema), repairController.updateRepairStatus);
-router.post('/:id/calls', validate(createCallLogSchema), callLogController.createCallLog);
+router.post('/', canWrite, validate(createRepairJobSchema), repairController.createRepairJob);
+router.put('/:id', canWrite, validate(updateRepairJobSchema), repairController.updateRepairJob);
+router.patch('/:id/status', canWrite, validate(updateRepairStatusSchema), repairController.updateRepairStatus);
+router.post('/:id/calls', canWrite, validate(createCallLogSchema), callLogController.createCallLog);
 router.get('/:id/calls', callLogController.getCallLogs);
-router.delete('/:id', repairController.deleteRepairJob);
-router.post('/:id/upload', (req, res, next) => {
+router.delete('/:id', roleMiddleware([ROLES.ADMIN]), repairController.deleteRepairJob);
+router.post('/:id/upload', canWrite, (req, res, next) => {
   req.params.type = 'repairs';
   next();
 }, upload.single('image'), repairController.uploadRepairImage);

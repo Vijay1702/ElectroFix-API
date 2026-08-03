@@ -70,7 +70,10 @@ test("full business workflow: onboarding through payroll and audit", async ({ re
   const invoice = (await invoiceRes.json()).data;
   expect(invoice.paymentStatus).toBe("pending");
 
-  // 6. Record full payment -> invoice paid + repair auto-delivered
+  // 6. Record full payment via the Payments module -> invoice paid, repair
+  // advances to "bill_paymented" (not "delivered" — paying through Payments
+  // records the money received, but delivery of the item is still a separate,
+  // manual confirmation step; only paying directly on the invoice auto-delivers).
   const paymentRes = await request.post("payments", {
     headers: adminHeaders,
     data: paymentPayload(invoice.id, { paymentAmount: 1200, paymentMethod: "upi" }),
@@ -78,7 +81,7 @@ test("full business workflow: onboarding through payroll and audit", async ({ re
   expect(paymentRes.status(), await paymentRes.text()).toBe(201);
 
   const repairAfterPayment = await request.get(`repair-jobs/${repair.id}`, { headers: adminHeaders });
-  expect((await repairAfterPayment.json()).data.status).toBe("delivered");
+  expect((await repairAfterPayment.json()).data.status).toBe("bill_paymented");
 
   const invoiceAfterPayment = await request.get(`invoices/${invoice.id}`, { headers: adminHeaders });
   const finalInvoice = (await invoiceAfterPayment.json()).data;

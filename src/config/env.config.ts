@@ -15,4 +15,7 @@ export const env = {
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || "30d",
   API_PREFIX: process.env.API_PREFIX || "/api/v1",
   NODE_ENV: process.env.NODE_ENV || "development",
+  CORS_ORIGIN: (process.env.CORS_ORIGIN || "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim()),
 };

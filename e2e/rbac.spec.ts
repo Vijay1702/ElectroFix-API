@@ -64,8 +64,8 @@ test.describe("rbac — STAFF allowed on stock-movements and payments", () => {
   });
 });
 
-test.describe("rbac — known gaps: routes with no role guard at all", () => {
-  test("any authenticated user (even TECHNICIAN) can update another user's record via PUT /users/:id", async ({ request }) => {
+test.describe("rbac — users, customers and repair-jobs are now guarded", () => {
+  test("TECHNICIAN is forbidden from updating another user's record via PUT /users/:id", async ({ request }) => {
     const admin = await loginAs(request, "ADMIN");
     const tech = await loginAs(request, "TECHNICIAN");
 
@@ -73,19 +73,81 @@ test.describe("rbac — known gaps: routes with no role guard at all", () => {
       headers: authHeader(tech.accessToken),
       data: { fullName: "Renamed By Technician" },
     });
-    // Documents current (unguarded) behavior — this succeeding is the known gap.
-    expect(res.ok()).toBeTruthy();
-
-    // restore the admin's name so other tests/readers aren't confused
-    await request.put(`users/${admin.user.id}`, { headers: authHeader(admin.accessToken), data: { fullName: "E2E Admin" } });
+    expect(res.status()).toBe(403);
   });
 
-  test("the customers module has no role guard — TECHNICIAN can delete a customer", async ({ request }) => {
+  test("TECHNICIAN is forbidden from deleting a user", async ({ request }) => {
+    const admin = await loginAs(request, "ADMIN");
+    const tech = await loginAs(request, "TECHNICIAN");
+
+    const res = await request.delete(`users/${admin.user.id}`, { headers: authHeader(tech.accessToken) });
+    expect(res.status()).toBe(403);
+  });
+
+  test("TECHNICIAN can create/update customers but not delete one", async ({ request }) => {
     const admin = await loginAs(request, "ADMIN");
     const customer = await createCustomer(request, admin.accessToken);
-
     const tech = await loginAs(request, "TECHNICIAN");
-    const res = await request.delete(`customers/${customer.id}`, { headers: authHeader(tech.accessToken) });
-    expect(res.ok()).toBeTruthy();
+
+    const updateRes = await request.put(`customers/${customer.id}`, {
+      headers: authHeader(tech.accessToken),
+      data: { fullName: "Updated By Technician" },
+    });
+    expect(updateRes.ok()).toBeTruthy();
+
+    const deleteRes = await request.delete(`customers/${customer.id}`, { headers: authHeader(tech.accessToken) });
+    expect(deleteRes.status()).toBe(403);
+  });
+
+  test("MONITOR is forbidden from creating or updating a customer", async ({ request }) => {
+    const admin = await loginAs(request, "ADMIN");
+    const customer = await createCustomer(request, admin.accessToken);
+    const monitor = await loginAs(request, "MONITOR");
+
+    const createRes = await request.post("customers", {
+      headers: authHeader(monitor.accessToken),
+      data: { fullName: "Blocked Customer", phoneNumber: "9000000098" },
+    });
+    expect(createRes.status()).toBe(403);
+
+    const updateRes = await request.put(`customers/${customer.id}`, {
+      headers: authHeader(monitor.accessToken),
+      data: { fullName: "Blocked Update" },
+    });
+    expect(updateRes.status()).toBe(403);
+  });
+
+  test("TECHNICIAN is forbidden from deleting a repair job", async ({ request }) => {
+    const admin = await loginAs(request, "ADMIN");
+    const customer = await createCustomer(request, admin.accessToken);
+    const tech = await loginAs(request, "TECHNICIAN");
+
+    const repairRes = await request.post("repair-jobs", {
+      headers: authHeader(tech.accessToken),
+      data: {
+        jobNumber: `JOB-E2E-RBAC-${Date.now()}`,
+        customerId: customer.id,
+        technicianId: tech.user.id,
+        deviceType: "Phone",
+        problemDescription: "Screen cracked",
+        estimatedCost: 500,
+      },
+    });
+    const repair = (await repairRes.json()).data;
+
+    const deleteRes = await request.delete(`repair-jobs/${repair.id}`, { headers: authHeader(tech.accessToken) });
+    expect(deleteRes.status()).toBe(403);
+  });
+
+  test("MONITOR is forbidden from creating a repair job", async ({ request }) => {
+    const admin = await loginAs(request, "ADMIN");
+    const customer = await createCustomer(request, admin.accessToken);
+    const monitor = await loginAs(request, "MONITOR");
+
+    const res = await request.post("repair-jobs", {
+      headers: authHeader(monitor.accessToken),
+      data: { customerId: customer.id, deviceType: "Phone", problemDescription: "Blocked" },
+    });
+    expect(res.status()).toBe(403);
   });
 });
