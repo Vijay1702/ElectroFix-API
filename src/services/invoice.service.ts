@@ -256,6 +256,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       if (Number(invoice.discount || 0) > 0) {
         baseHeight += 18;
       }
+      baseHeight += 85; // Google review QR block (heading + caption + QR image)
       const totalHeight = baseHeight + itemHeight;
 
       const doc = new PDFDocument({
@@ -508,6 +509,23 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
 
       doc.font("Helvetica-Oblique").fontSize(6.5).fillColor("#475569").text("Visit Us Again!", 6, y, { align: "center", width: 124 });
       y += 12;
+
+      // Gear pattern separator above the review QR
+      drawGearPattern(y);
+      y += 8;
+
+      // Google review prompt + QR code
+      doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#0f172a").text("ENJOYED OUR SERVICE?", 6, y, { align: "center", width: 124 });
+      y += 8;
+      doc.font("Helvetica").fontSize(6).fillColor("#475569").text("Scan to leave us a Google Review", 6, y, { align: "center", width: 124 });
+      y += 9;
+
+      const qrPath = path.join(process.cwd(), "src/assets/google-review-qr.png");
+      if (fs.existsSync(qrPath)) {
+        const qrSize = 50;
+        doc.image(qrPath, (136 - qrSize) / 2, y, { width: qrSize, height: qrSize });
+        y += qrSize + 6;
+      }
 
       // Divider
       doc
