@@ -514,13 +514,13 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       drawGearPattern(y);
       y += 8;
 
-      // Google review prompt + QR code
-      doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#0f172a").text("ENJOYED OUR SERVICE?", 6, y, { align: "center", width: 124 });
+      // Website prompt + QR code
+      doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#0f172a").text("VISIT US ONLINE", 6, y, { align: "center", width: 124 });
       y += 8;
-      doc.font("Helvetica").fontSize(6).fillColor("#475569").text("Scan to leave us a Google Review", 6, y, { align: "center", width: 124 });
+      doc.font("Helvetica").fontSize(6).fillColor("#475569").text("Scan to explore our website", 6, y, { align: "center", width: 124 });
       y += 9;
 
-      const qrPath = path.join(process.cwd(), "src/assets/google-review-qr.png");
+      const qrPath = path.join(process.cwd(), "src/assets/website-qr.png");
       if (fs.existsSync(qrPath)) {
         const qrSize = 50;
         doc.image(qrPath, (136 - qrSize) / 2, y, { width: qrSize, height: qrSize });
