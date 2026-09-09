@@ -244,10 +244,9 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
   try {
     qrBuffer = await QRCode.toBuffer(displayWebsite, {
       errorCorrectionLevel: "H",
-      type: "image/png",
-      width: 200,
+      type: "png",
+      width: 10,
       margin: 1,
-      scale: 2,
       color: {
         dark: "#000000",
         light: "#FFFFFF",
@@ -541,7 +540,7 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
 
       if (qrBuffer) {
         const qrSize = 80;
-        doc.image(qrBuffer, (136 - qrSize) / 2, y, { width: qrSize, height: qrSize, interpolate: false });
+        doc.image(qrBuffer, (136 - qrSize) / 2, y, { width: qrSize, height: qrSize } as any);
         y += qrSize + 6;
       }
 
