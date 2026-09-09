@@ -4,6 +4,7 @@ import { PAYMENT_STATUS } from "../constants/payment-status.constants";
 import { REPAIR_STATUS } from "../constants/repair-status.constants";
 import { generateInvoiceNumber } from "../utils/generate-code";
 import PDFDocument = require("pdfkit");
+import QRCode = require("qrcode");
 import prisma from "../config/prisma.config";
 
 export const getInvoices = async (
@@ -237,6 +238,24 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
   const displayPhone = (shopPhone && shopPhone !== "8667264983") ? shopPhone : "8667264983";
   const displayEmail = (shopEmail && shopEmail !== "rameshvijay871@gmail.com") ? shopEmail : "rameshvijay871@gmail.com";
   const displayWebsite = "https://srisenthilelectrofixin.vercel.app/";
+
+  // Generate QR code for website (optimized for thermal printer)
+  let qrBuffer: Buffer | null = null;
+  try {
+    qrBuffer = await QRCode.toBuffer(displayWebsite, {
+      errorCorrectionLevel: "H",
+      type: "image/png",
+      width: 200,
+      margin: 1,
+      scale: 2,
+      color: {
+        dark: "#000000",
+        light: "#FFFFFF",
+      },
+    });
+  } catch (err) {
+    console.warn("Failed to generate QR code:", err);
+  }
 
   return new Promise((resolve, reject) => {
     try {
@@ -520,10 +539,9 @@ export const generateInvoiceBuffer = async (invoice: any): Promise<Buffer> => {
       doc.font("Helvetica").fontSize(6).fillColor("#475569").text("Scan to explore our website", 6, y, { align: "center", width: 124 });
       y += 9;
 
-      const qrPath = path.join(process.cwd(), "src/assets/website-qr.png");
-      if (fs.existsSync(qrPath)) {
-        const qrSize = 50;
-        doc.image(qrPath, (136 - qrSize) / 2, y, { width: qrSize, height: qrSize });
+      if (qrBuffer) {
+        const qrSize = 80;
+        doc.image(qrBuffer, (136 - qrSize) / 2, y, { width: qrSize, height: qrSize, interpolate: false });
         y += qrSize + 6;
       }
 
