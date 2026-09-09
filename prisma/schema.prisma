@@ -41,6 +41,7 @@ model User {
   createdAttendance Attendance[] @relation("CreatedAttendance")
   callLogs          CallLog[]
   auditLogs         AuditLog[]
+  expenses          Expense[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -324,4 +325,20 @@ model AuditLog {
   description String
   referenceId String?
   createdAt   DateTime @default(now())
+}
+
+model Expense {
+  id             String   @id @default(uuid())
+
+  expenseName    String
+  amount         Decimal  @db.Decimal(10,2)
+  description    String?
+
+  expenseDate    DateTime
+
+  createdBy      String
+  user           User     @relation(fields: [createdBy], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

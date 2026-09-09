@@ -34,5 +34,6 @@ router.get('/weekly-performance', dashboardController.getWeeklyPerformance);
 router.get('/top-products', dashboardController.getTopProducts);
 router.get('/top-devices', dashboardController.getTopRepairDevices);
 router.get('/top-customers', dashboardController.getTopCustomers);
+router.get('/daily-breakdown', dashboardController.getDailyBreakdown);
 
 export default router;

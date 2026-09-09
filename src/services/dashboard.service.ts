@@ -496,3 +496,82 @@ export const getWeeklyPerformance = async (startDateStr?: string, endDateStr?: s
 
   return result;
 };
+
+export const getDailyBreakdown = async (startDateStr?: string, endDateStr?: string) => {
+  const now = new Date();
+  let start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  let end = now;
+
+  if (startDateStr) {
+    start = new Date(startDateStr);
+    start.setHours(0, 0, 0, 0);
+  }
+
+  if (endDateStr) {
+    end = new Date(endDateStr);
+    end.setHours(23, 59, 59, 999);
+  }
+
+  // Get all invoices and expenses for the period
+  const [invoices, expenses] = await Promise.all([
+    prisma.invoice.findMany({
+      where: {
+        invoiceDate: {
+          gte: start,
+          lte: end
+        }
+      },
+      select: {
+        invoiceDate: true,
+        grandTotal: true
+      }
+    }),
+    prisma.expense.findMany({
+      where: {
+        expenseDate: {
+          gte: start,
+          lte: end
+        }
+      },
+      select: {
+        expenseDate: true,
+        amount: true
+      }
+    })
+  ]);
+
+  // Group by date
+  const dailyMap = new Map<string, { revenue: number; expense: number }>();
+
+  // Process invoices
+  invoices.forEach(inv => {
+    const date = new Date(inv.invoiceDate).toLocaleDateString('en-IN');
+    if (!dailyMap.has(date)) {
+      dailyMap.set(date, { revenue: 0, expense: 0 });
+    }
+    const current = dailyMap.get(date)!;
+    current.revenue += Number(inv.grandTotal || 0);
+  });
+
+  // Process expenses
+  expenses.forEach(exp => {
+    const date = new Date(exp.expenseDate).toLocaleDateString('en-IN');
+    if (!dailyMap.has(date)) {
+      dailyMap.set(date, { revenue: 0, expense: 0 });
+    }
+    const current = dailyMap.get(date)!;
+    current.expense += Number(exp.amount || 0);
+  });
+
+  // Convert to sorted array
+  const result = Array.from(dailyMap.entries())
+    .map(([date, data]) => ({
+      date,
+      revenue: data.revenue,
+      expense: data.expense,
+      netRevenue: data.revenue - data.expense
+    }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  return result;
+};

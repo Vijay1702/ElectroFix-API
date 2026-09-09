@@ -102,3 +102,13 @@ export const getTopCustomers = async (req: Request, res: Response, next: NextFun
     next(error);
   }
 };
+
+export const getDailyBreakdown = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const breakdown = await dashboardService.getDailyBreakdown(startDate as string, endDate as string);
+    return successResponse(res, breakdown, "Daily breakdown fetched successfully");
+  } catch (error) {
+    next(error);
+  }
+};

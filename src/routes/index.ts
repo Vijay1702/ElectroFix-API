@@ -15,6 +15,7 @@ import settingRoutes from './setting.routes';
 import uploadRoutes from './upload.routes';
 import attendanceRoutes from './attendance.routes';
 import auditRoutes from './audit.routes';
+import expenseRoutes from './expense.routes';
 
 const router = Router();
 
@@ -34,5 +35,6 @@ router.use('/settings', settingRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/audit', auditRoutes);
+router.use('/expenses', expenseRoutes);
 
 export default router;
