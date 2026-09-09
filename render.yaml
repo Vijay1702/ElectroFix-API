@@ -4,8 +4,9 @@ services:
     env: node
     region: singapore
     rootDir: ElectroFix-API
-    buildCommand: npm install --production=false && npm run build && npx prisma generate && npx prisma migrate deploy
-    startCommand: npm start
+    buildCommand: chmod +x ./render-build.sh && ./render-build.sh
+    startCommand: npm run migrate:deploy && npm start
+    healthCheckPath: /api/v1/health
     envVars:
       - key: DATABASE_URL
         sync: false

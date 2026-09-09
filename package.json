@@ -10,7 +10,11 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:bootstrap": "ts-node prisma/bootstrap.ts",
     "prisma:seed:e2e": "ts-node prisma/seed.e2e.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "migrate": "node scripts/migrate.js",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset --force",
+    "migrate:create": "prisma migrate dev"
   },
   "keywords": [],
   "author": "",
