@@ -63,6 +63,7 @@ export const createExpense = async (payload: any) => {
     expenseName: payload.expenseName,
     amount: payload.amount,
     description: payload.description || null,
+    hasBill: payload.hasBill || false,
     expenseDate: payload.expenseDate || new Date(),
     createdBy: payload.createdBy
   });
@@ -79,6 +80,7 @@ export const updateExpense = async (id: string, payload: any) => {
   if (payload.expenseName) updateData.expenseName = payload.expenseName;
   if (payload.amount !== undefined) updateData.amount = payload.amount;
   if (payload.description !== undefined) updateData.description = payload.description;
+  if (payload.hasBill !== undefined) updateData.hasBill = payload.hasBill;
   if (payload.expenseDate) updateData.expenseDate = payload.expenseDate;
 
   return expenseRepository.update(id, updateData);

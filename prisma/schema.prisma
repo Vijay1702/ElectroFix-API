@@ -333,6 +333,7 @@ model Expense {
   expenseName    String
   amount         Decimal  @db.Decimal(10,2)
   description    String?
+  hasBill        Boolean  @default(false)
 
   expenseDate    DateTime
 
